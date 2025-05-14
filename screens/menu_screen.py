@@ -149,7 +149,7 @@ class MenuScreen:
         
         # Dados simulados para testes
         self.student_data = {
-            "money": 5000,
+            "money": 50000,
             "games_played": 8,
             "last_game_date": "2025-04-15"
         }

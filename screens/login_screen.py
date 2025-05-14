@@ -12,6 +12,7 @@ except ImportError:
     # Definições padrão caso o arquivo config.py não exista
     class Config:
         def __init__(self):
+            
             self.COLORS = {
                 "background": (235, 235, 240),
                 "light_shadow": (255, 255, 255),
@@ -19,6 +20,27 @@ except ImportError:
                 "accent": (106, 130, 251),
                 "text": (60, 60, 60)
             }
+            try:
+              print("Carregando tela de fundo")
+              bg_path = os.path.join("assets", "images", "background.png")
+              self.background = pygame.image.load(bg_path).convert()
+                 # Redimensionar se necessário para caber na tela
+              if self.background.get_size() != (self.width, self.height):
+                  self.background = pygame.transform.scale(self.background, (self.width, self.height))
+            except (pygame.error, FileNotFoundError) as e:
+                   print(f"Aviso: Não foi possível carregar o background: {e}")
+                   self.background = None
+                   
+            try:
+        # Caminho absoluto ou relativo determinado pelo seu projeto
+              font_path = os.path.join("assets", "fonts", "pixel_font.ttf")
+              self.title_font = pygame.font.Font(font_path, 36)
+              self.text_font = pygame.font.Font(font_path, 18)
+            except FileNotFoundError:
+        # Fallback para fontes do sistema caso não encontre as pixeladas
+                print("Aviso: Fonte pixelada não encontrada. Usando fontes do sistema.")
+                self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
+                self.text_font = pygame.font.SysFont('Arial', 18)
     config = Config()
 
 class NeumorphicPanel:
@@ -178,9 +200,32 @@ class LoginScreen:
         self.dark_shadow = config.COLORS["dark_shadow"]
         self.accent_color = config.COLORS["accent"]
         
-        # Usar fonte padrão do sistema em vez de carregar fonte externa
-        self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
-        self.text_font = pygame.font.SysFont('Arial', 18)
+        # Carregar imagem de fundo
+        self.background = None
+        try:
+            print("Carregando tela de fundo")
+            bg_path = os.path.join("assets", "images", "background.png")
+            self.background = pygame.image.load(bg_path).convert()
+            # Redimensionar se necessário para caber na tela
+            if self.background.get_size() != (self.width, self.height):
+                self.background = pygame.transform.scale(self.background, (self.width, self.height))
+        except (pygame.error, FileNotFoundError) as e:
+            print(f"Aviso: Não foi possível carregar o background: {e}")
+            self.background = None
+        
+        # Tentar carregar fontes personalizadas
+        try:
+            # Caminho absoluto ou relativo determinado pelo seu projeto
+            font_path = os.path.join("assets", "fonts", "pixel_font.ttf")
+            self.title_font = pygame.font.Font(font_path, 36)
+            self.text_font = pygame.font.Font(font_path, 18)
+        except FileNotFoundError:
+            # Fallback para fontes do sistema caso não encontre as pixeladas
+            print("Aviso: Fonte pixelada não encontrada. Usando fontes do sistema.")
+            self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
+            self.text_font = pygame.font.SysFont('Arial', 18)
+        
+        # Resto do código de inicialização permanece o mesmo...
         
         # Criar elementos de UI
         center_x = self.width // 2
@@ -310,12 +355,14 @@ class LoginScreen:
             self.login_button.pressed = False
     
     def draw(self):
-        # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
-        
-        # Desenha o painel principal
-        self.main_panel.draw(self.screen)
-        
+        # Desenha o background
+        if self.background:
+            self.screen.blit(self.background, (0, 0))
+        else:
+            # Fallback para a cor de fundo original
+            self.screen.fill(self.bg_color)
+    
+    # Resto do código de desenho existente...
         # Desenha o título
         title_text = self.title_font.render("Quiz do Milhão", True, (60, 60, 60))
         title_rect = title_text.get_rect(center=(self.width // 2, 200))
