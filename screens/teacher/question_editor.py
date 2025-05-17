@@ -1,6 +1,7 @@
 # screens/teacher/question_editor.py
 # -*- coding: utf-8 -*-
 
+import os
 import pygame
 import sys
 from pygame.locals import *
@@ -48,7 +49,7 @@ except ImportError:
         "light_shadow": (255, 255, 255),
         "dark_shadow": (205, 205, 210),
         "accent": (106, 130, 251),
-        "text": (60, 60, 60),
+        "text": (0, 0, 0),
         "success": (75, 181, 67),
         "warning": (232, 181, 12),
         "error": (232, 77, 77)
@@ -57,10 +58,10 @@ except ImportError:
     GRADE_LEVELS = DEFAULT_GRADE_LEVELS
     DIFFICULTY_LEVELS = DEFAULT_DIFFICULTY_LEVELS
 
-class NeumorphicPanel:
+class QuestionEditorScreen:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
         self.rect = pygame.Rect(x, y, width, height)
-        self.bg_color = bg_color
+        self.bg_color = (30, 180, 195)
         self.light_shadow = light_shadow
         self.dark_shadow = dark_shadow
         self.border_radius = border_radius
@@ -81,12 +82,12 @@ class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
                  accent_color, text, font, is_toggle=False, is_active=False):
         self.rect = pygame.Rect(x, y, width, height)
-        self.bg_color = bg_color
+        self.bg_color = (251, 164, 31)
         self.light_shadow = light_shadow
         self.dark_shadow = dark_shadow
         self.accent_color = accent_color
         self.text = text
-        self.font = font
+        self.font = os.path.join("assets", "fonts", "pixel_font.ttf")
         self.is_toggle = is_toggle
         self.is_active = is_active
         self.pressed = False
@@ -187,12 +188,12 @@ class NeumorphicInput:
             return "\n".join(self.lines)
     
     def draw(self, surface):
-        # Desenhar o fundo do input (invertido do normal para parecer afundado)
+        # Desenhar o fundo do input 
         pygame.draw.rect(surface, self.bg_color, 
                        pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
                        border_radius=10)
         
-        # Desenhar sombras internas (invertidas)
+        # Desenhar sombras internas 
         shadow_rect_dark = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
         pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
         
@@ -308,7 +309,7 @@ class QuestionEditor:
         center_x = self.width // 2
         
         # Painel principal (ajustado para garantir que caiba na tela)
-        self.main_panel = NeumorphicPanel(
+        self.main_panel = QuestionEditorScreen(
             20, 20, 
             self.width - 40, self.height - 40, 
             self.bg_color, self.light_shadow, self.dark_shadow
@@ -319,14 +320,14 @@ class QuestionEditor:
         right_panel_width = self.width * 0.65  # 65% da largura da tela
         
         # Painéis de configuração (lado esquerdo - mais estreito)
-        self.config_panel = NeumorphicPanel(
+        self.config_panel = QuestionEditorScreen(
             40, 80, 
             left_panel_width - 20, self.height - 120, 
             self.bg_color, self.light_shadow, self.dark_shadow
         )
         
         # Painel do editor (lado direito - mais largo)
-        self.editor_panel = NeumorphicPanel(
+        self.editor_panel = QuestionEditorScreen(
             left_panel_width + 40, 80, 
             right_panel_width - 60, self.height - 120, 
             self.bg_color, self.light_shadow, self.dark_shadow
@@ -416,7 +417,7 @@ class QuestionEditor:
         self.question_input = NeumorphicInput(
             editor_x, question_y,
             editor_width, 90,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            (251, 164, 31), self.light_shadow, self.dark_shadow,
             "Digite o enunciado da pergunta...", self.text_font,
             multiline=True, max_length=300
         )
@@ -431,7 +432,7 @@ class QuestionEditor:
             option = NeumorphicInput(
                 editor_x, options_y + i * (option_height + option_spacing),
                 editor_width, option_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
+                (251, 164, 31), self.light_shadow, self.dark_shadow,
                 f"Digite a alternativa {option_labels[i]}...", self.text_font,
                 max_length=200
             )
@@ -441,7 +442,7 @@ class QuestionEditor:
         self.explanation_input = NeumorphicInput(
             editor_x, explanation_y,
             editor_width, 60,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            (251, 164, 31), self.light_shadow, self.dark_shadow,
             "Digite uma breve explicação da resposta correta...", self.text_font,
             multiline=True, max_length=300
         )
