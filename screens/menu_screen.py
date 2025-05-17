@@ -31,16 +31,22 @@ class MenuScreen:
         except:
             self.background = None
 
-        # Botões (posição fixa como no código original)
-        center_x = self.width // 2
-        self.buttons = [
-            {"label": "Gerenciar Usuário", "rect": pygame.Rect(250, 150, 300, 50), "action": "create_user"},
-            {"label": "Gerenciar Turma", "rect": pygame.Rect(250, 220, 300, 50), "action": "create_class"},
-            {"label": "Gerenciar Questão", "rect": pygame.Rect(250, 290, 300, 50), "action": "edit_questions"},
-            {"label": "Visualizar Ranking", "rect": pygame.Rect(250, 360, 300, 50), "action": "show_ranking"},
-            {"label": "JOGAR", "rect": pygame.Rect(250, 430, 300, 70), "action": "play_game"},
-            {"label": "Sair", "rect": pygame.Rect(self.width - 110, 20, 90, 30), "action": "logout"}
-        ]
+        # Definir botões conforme tipo de usuário
+        if self.user_data['user_type'] == 'teacher':
+            self.buttons = [
+                {"label": "Gerenciar Usuário", "rect": pygame.Rect(250, 150, 300, 50), "action": "create_user"},
+                {"label": "Gerenciar Turma", "rect": pygame.Rect(250, 220, 300, 50), "action": "create_class"},
+                {"label": "Gerenciar Questão", "rect": pygame.Rect(250, 290, 300, 50), "action": "edit_questions"},
+                {"label": "Visualizar Ranking", "rect": pygame.Rect(250, 360, 300, 50), "action": "show_ranking"},
+                {"label": "JOGAR", "rect": pygame.Rect(250, 430, 300, 70), "action": "play_game"},
+                {"label": "Sair", "rect": pygame.Rect(self.width - 110, 20, 90, 30), "action": "logout"}
+            ]
+        else:
+            self.buttons = [
+                {"label": "JOGAR", "rect": pygame.Rect(250, 200, 300, 60), "action": "play_game"},
+                {"label": "Pontuação", "rect": pygame.Rect(250, 280, 300, 50), "action": "show_score"},
+                {"label": "Sair", "rect": pygame.Rect(self.width - 110, 20, 90, 30), "action": "logout"}
+            ]
 
     def draw_button(self, label, rect):
         pygame.draw.rect(self.screen, self.button_color, rect, border_radius=4)
