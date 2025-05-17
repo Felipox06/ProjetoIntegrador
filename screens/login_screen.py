@@ -9,7 +9,7 @@ COLORS = {
     "light_shadow": (255, 255, 255),  # Branco
     "dark_shadow": (20, 140, 150),    # #148C96
     "accent": (251, 164, 31),         # Laranja #FBA41F
-    "text": (60, 60, 60),
+    "text": (0, 0, 0),
     "black": (0, 0, 0)
 }
 

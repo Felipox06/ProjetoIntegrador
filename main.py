@@ -1,6 +1,3 @@
-# main.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 import os
@@ -16,11 +13,12 @@ SCREEN_HEIGHT = 600
 
 # Cores no formato RGB
 COLORS = {
-    "background": (235, 235, 240),
-    "light_shadow": (255, 255, 255),
-    "dark_shadow": (205, 205, 210),
-    "accent": (106, 130, 251),
-    "text": (60, 60, 60),
+    "background": (30, 180, 195),     # #1EB4C3
+    "light_shadow": (255, 255, 255),  # Branco
+    "dark_shadow": (20, 140, 150),    # #148C96
+    "accent": (251, 164, 31),         # Laranja #FBA41F
+    "text": (0, 0, 00),
+    "black": (0, 0, 0),
     "success": (75, 181, 67),
     "warning": (232, 181, 12),
     "error": (232, 77, 77)
