@@ -255,8 +255,7 @@ class LoginScreen:
         
         # Botões
         self.login_button = NeumorphicButton(
-            center_x - 150, 430,
-            300, 50,
+            center_x - 150, 420,300, 50,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "ENTRAR", self.text_font
         )
@@ -379,7 +378,7 @@ class LoginScreen:
         
         # Desenha texto explicativo
         type_text = self.text_font.render("Selecione seu tipo de usuário:", True, (60, 60, 60))
-        type_rect = type_text.get_rect(center=(self.width // 2, 480))
+        type_rect = type_text.get_rect(center=(self.width // 2, 488))
         self.screen.blit(type_text, type_rect)
         
         # Atualiza a tela
