@@ -105,11 +105,11 @@ class GameConfigScreen:
         self.grade_buttons = self.create_grade_buttons()
         self.difficulty_buttons = self.create_difficulty_buttons()
 
-        self.start_button = NeumorphicButton(self.width // 2 + 50, self.panel_y + 500, 200, 50,
+        self.start_button = NeumorphicButton(self.width // 2 + 50, self.panel_y + 470, 200, 50,
                                              self.bg_color, self.light_shadow, self.dark_shadow,
                                              (75, 181, 67), "INICIAR", self.subtitle_font)
 
-        self.back_button = NeumorphicButton(self.width // 2 - 250, self.panel_y + 500, 200, 50,
+        self.back_button = NeumorphicButton(self.width // 2 - 250, self.panel_y + 470, 200, 50,
                                             self.bg_color, self.light_shadow, self.dark_shadow,
                                             (232, 77, 77), "VOLTAR", self.subtitle_font)
 
@@ -121,7 +121,7 @@ class GameConfigScreen:
         margin_y = 15
         total_width = 4 * button_width + 3 * margin_x
         start_x = self.panel_x + (700 - total_width) // 2
-        start_y = self.panel_y + 130
+        start_y = self.panel_y + 100
         for i, subject in enumerate(SUBJECTS):
             row = i // 4
             col = i % 4
@@ -138,7 +138,7 @@ class GameConfigScreen:
         button_height = 50
         margin_x = 20
         start_x = self.width // 2 - (button_width * 1.5 + margin_x)
-        start_y = self.panel_y + 300
+        start_y = self.panel_y + 260
         for i, grade in enumerate(GRADE_LEVELS):
             x = start_x + i * (button_width + margin_x)
             buttons.append(NeumorphicButton(x, start_y, button_width, button_height,
@@ -152,7 +152,7 @@ class GameConfigScreen:
         button_height = 50
         margin_x = 20
         start_x = self.width // 2 - (button_width * 1.5 + margin_x)
-        start_y = self.panel_y + 390
+        start_y = self.panel_y + 360
         for i, level in enumerate(DEFAULT_DIFFICULTIES):
             x = start_x + i * (button_width + margin_x)
             buttons.append(NeumorphicButton(x, start_y, button_width, button_height,
@@ -198,22 +198,22 @@ class GameConfigScreen:
         self.main_panel.draw(self.screen)
 
         title = self.title_font.render("Configurar Jogo", True, COLORS["text"])
-        self.screen.blit(title, title.get_rect(center=(self.width // 2, self.panel_y + 40)))
+        self.screen.blit(title, title.get_rect(center=(self.width // 2, self.panel_y + 30)))
 
         subtitle1 = self.subtitle_font.render("Selecione a Matéria:", True, COLORS["text"])
-        self.screen.blit(subtitle1, subtitle1.get_rect(center=(self.width // 2, self.panel_y + 100)))
+        self.screen.blit(subtitle1, subtitle1.get_rect(center=(self.width // 2, self.panel_y + 80)))
 
         for btn in self.subject_buttons:
             btn.draw(self.screen)
 
         subtitle2 = self.subtitle_font.render("Selecione a Série:", True, COLORS["text"])
-        self.screen.blit(subtitle2, subtitle2.get_rect(center=(self.width // 2, self.panel_y + 270)))
+        self.screen.blit(subtitle2, subtitle2.get_rect(center=(self.width // 2, self.panel_y + 240)))
 
         for btn in self.grade_buttons:
             btn.draw(self.screen)
 
         subtitle3 = self.subtitle_font.render("Dificuldade:", True, COLORS["text"])
-        self.screen.blit(subtitle3, subtitle3.get_rect(center=(self.width // 2, self.panel_y + 375)))
+        self.screen.blit(subtitle3, subtitle3.get_rect(center=(self.width // 2, self.panel_y + 340)))
 
         for btn in self.difficulty_buttons:
             btn.draw(self.screen)
@@ -223,7 +223,7 @@ class GameConfigScreen:
 
         if not (self.selected_subject and self.selected_grade):
             hint = self.text_font.render("Selecione uma matéria e uma série para iniciar", True, (0, 0, 0))
-            self.screen.blit(hint, hint.get_rect(center=(self.width // 2, self.panel_y + 470)))
+            self.screen.blit(hint, hint.get_rect(center=(self.width // 2, self.panel_y + 440)))
 
         pygame.display.flip()
 
