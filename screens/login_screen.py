@@ -45,14 +45,16 @@ class LoginScreen:
             self.text_font = pygame.font.SysFont('Arial', 24)
             self.input_font = pygame.font.SysFont('Arial', 22)
 
+        form_base_y = 160
+
         center_x = self.width // 2
-        self.username_input = NeumorphicInput(center_x - 150, 240, 300, 50, self.bg_color, self.light_shadow, self.dark_shadow, "Usuário", self.input_font)
-        self.password_input = NeumorphicInput(center_x - 150, 310, 300, 50, self.bg_color, self.light_shadow, self.dark_shadow, "Senha", self.input_font, is_password=True)
+        self.username_input = NeumorphicInput(center_x - 150, form_base_y + 25, 300, 50, self.bg_color, self.light_shadow, self.dark_shadow, "Usuário", self.input_font)
+        self.password_input = NeumorphicInput(center_x - 150, form_base_y + 85, 300, 50, self.bg_color, self.light_shadow, self.dark_shadow, "Senha", self.input_font, is_password=True)
 
-        self.login_button = NeumorphicButton(center_x - 150, 390, 300, 50, self.bg_color, self.light_shadow, self.dark_shadow, self.accent_color, "ENTRAR", self.text_font)
+        self.login_button = NeumorphicButton(center_x - 150, form_base_y + 175, 300, 50, self.bg_color, self.light_shadow, self.dark_shadow, self.accent_color, "ENTRAR", self.text_font)
 
-        self.student_button = NeumorphicButton(center_x - 150, 480, 140, 40, self.bg_color, self.light_shadow, self.dark_shadow, self.accent_color, "Aluno", self.text_font, is_toggle=True, is_active=True)
-        self.teacher_button = NeumorphicButton(center_x + 10, 480, 140, 40, self.bg_color, self.light_shadow, self.dark_shadow, self.accent_color, "Professor", self.text_font, is_toggle=True)
+        self.student_button = NeumorphicButton(center_x - 150, form_base_y + 245, 140, 40, self.bg_color, self.light_shadow, self.dark_shadow, self.accent_color, "Aluno", self.text_font, is_toggle=True, is_active=True)
+        self.teacher_button = NeumorphicButton(center_x + 10, form_base_y + 245, 140, 40, self.bg_color, self.light_shadow, self.dark_shadow, self.accent_color, "Professor", self.text_font, is_toggle=True)
 
         self.user_type = "student"
         self.show_password = False
@@ -123,7 +125,7 @@ class LoginScreen:
         self.teacher_button.draw(self.screen)
 
         # Texto tipo usuário
-        type_text = self.text_font.render("Selecione seu tipo de usuário:", True, self.black)
+        type_text = self.text_font.render("Selecione seu tipo de usuário", True, self.black)
         type_rect = type_text.get_rect(center=(self.width // 2, 460))
         self.screen.blit(type_text, type_rect)
 
