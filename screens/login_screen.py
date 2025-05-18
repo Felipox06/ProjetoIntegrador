@@ -365,7 +365,7 @@ class LoginScreen:
     
     # Resto do código de desenho existente...
         # Desenha o título
-        title_text = self.title_font.render("Poligame Show", True, (60, 60, 60))
+        title_text = self.title_font.render("Poligame Show", True, (0, 0, 0))
         title_rect = title_text.get_rect(center=(self.width // 2, 145))
         self.screen.blit(title_text, title_rect)
         
