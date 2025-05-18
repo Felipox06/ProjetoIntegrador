@@ -287,7 +287,7 @@ class QuestionEditor:
         
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 32, bold=True)
-        self.subtitle_font = pygame.font.SysFont('Arial', 24, bold=True)
+        self.subtitle_font = pygame.font.SysFont('Arial', 20, bold=True)
         self.text_font = pygame.font.SysFont('Arial', 18)
         self.small_font = pygame.font.SysFont('Arial', 14)
         
@@ -771,15 +771,10 @@ class QuestionEditor:
         self.screen.blit(question_text, question_rect)
         
         options_text = self.subtitle_font.render("Alternativas:", True, (60, 60, 60))
-        options_rect = options_text.get_rect(topleft=(self.option_inputs[0].rect.x, self.option_inputs[0].rect.y - 30))
+        options_rect = options_text.get_rect(topleft=(self.option_inputs[0].rect.x, self.option_inputs[0].rect.y - 20))
         self.screen.blit(options_text, options_rect)
         
-        correct_text = self.subtitle_font.render("Correta", True, (60, 60, 60))
-        correct_rect = correct_text.get_rect(topleft=(self.correct_option_buttons[0].rect.x - 15, self.option_inputs[0].rect.y - 30))
-        correct_rect.centerx = self.correct_option_buttons[0].rect.centerx
-        self.screen.blit(correct_text, correct_rect)
-        
-        explanation_text = self.subtitle_font.render("Explicação:", True, (60, 60, 60))
+        explanation_text = self.subtitle_font.render("Dica sobre Tema:", True, (60, 60, 60))
         explanation_rect = explanation_text.get_rect(topleft=(self.explanation_input.rect.x, self.explanation_input.rect.y - 30))
         self.screen.blit(explanation_text, explanation_rect)
         
