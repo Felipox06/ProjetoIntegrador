@@ -1,3 +1,4 @@
+import os
 import pygame
 import sys
 import random
@@ -53,7 +54,7 @@ class NeumorphicButton:
         self.is_circular = is_circular
         self.pressed = False
         self.correct = None
-        self.text_surf = font.render(text, True, (50, 50, 50))
+        self.text_surf = font.render(text, True, (0, 0, 0))
         self.text_rect = self.text_surf.get_rect(center=self.rect.center)
 
     def is_clicked(self, pos):
@@ -360,7 +361,7 @@ class QuizScreen:
         # Botão próxima pergunta (redondo)
         self.next_button = NeumorphicButton(
             left_panel_width // 2 + 215, 
-            button_bottom_y, 60, 60,
+            button_bottom_y, 60, 50,
             self.bg_color,
             self.light_shadow,
             self.dark_shadow,
@@ -372,7 +373,7 @@ class QuizScreen:
         # Botão desistir (redondo) - Habilitado e posicionado à esquerda
         self.quit_button = NeumorphicButton(
             50, button_bottom_y,
-            60, 60,
+            60, 50,
             self.bg_color,
             self.light_shadow,
             self.dark_shadow,
@@ -402,7 +403,7 @@ class QuizScreen:
         # Botão pular pergunta movido para a direita, próximo à borda da caixa esquerda
         self.skip_button = NeumorphicButton(
             left_panel_width + 50,  
-            help_button_y_start - 30,
+            help_button_y_start - 40,
             help_button_width, help_button_height,
             self.bg_color,
             self.light_shadow,
@@ -413,7 +414,7 @@ class QuizScreen:
         
         self.eliminate_button = NeumorphicButton(
             left_panel_width + 50,  # Mais próximo da borda
-            help_button_y_start + 15,
+            help_button_y_start + 5,
             help_button_width, help_button_height,
             self.bg_color,
             self.light_shadow,
@@ -424,7 +425,7 @@ class QuizScreen:
         
         self.hint_button = NeumorphicButton(
             left_panel_width + 50,  # Mais próximo da borda
-            help_button_y_start + 60,
+            help_button_y_start + 50,
             help_button_width, help_button_height,
             self.bg_color,
             self.light_shadow,
@@ -606,17 +607,17 @@ class QuizScreen:
         
         # Informações do quiz
         info_text = f"{self.game_config['subject']} - {self.game_config['grade']}"
-        info_surf = self.info_font.render(info_text, True, (80, 80, 80))
+        info_surf = self.info_font.render(info_text, True, (0, 0, 0))
         info_rect = info_surf.get_rect(topleft=(40, 50))
         self.screen.blit(info_surf, info_rect)
         
         question_num_text = f"Pergunta {self.current_question + 1} de {TOTAL_QUESTIONS}"
-        question_num_surf = self.info_font.render(question_num_text, True, (80, 80, 80))
-        question_num_rect = question_num_surf.get_rect(midtop=(self.left_panel.rect.width // 2 + 20, 34))
+        question_num_surf = self.info_font.render(question_num_text, True, (0, 0, 0))
+        question_num_rect = question_num_surf.get_rect(midtop=(self.left_panel.rect.width // 2 + 20, 30))
         self.screen.blit(question_num_surf, question_num_rect)
         
         # Informações de dinheiro (painel direito)
-        money_title = self.title_font.render("PoliCoins", True, (50, 50, 50))
+        money_title = self.title_font.render("PoliCoins", True, (0, 0, 0))
         money_title_rect = money_title.get_rect(center=(self.right_panel.rect.centerx, 60))
         self.screen.blit(money_title, money_title_rect)
         
@@ -626,7 +627,7 @@ class QuizScreen:
         self.screen.blit(money_surf, money_rect)
         
         saved_money_text = f"Garantido: R$ {self.saved_money:,}"
-        saved_money_surf = self.info_font.render(saved_money_text, True, (80, 80, 80))
+        saved_money_surf = self.info_font.render(saved_money_text, True, (0, 0, 0))
         saved_money_rect = saved_money_surf.get_rect(center=(self.right_panel.rect.centerx, 160))
         self.screen.blit(saved_money_surf, saved_money_rect)
         
@@ -659,8 +660,8 @@ class QuizScreen:
             lines = self.wrap_text(question_text, self.question_font, self.left_panel.rect.width - 60)
             
             for i, line in enumerate(lines):
-                line_surf = self.question_font.render(line, True, (50, 50, 50))
-                line_rect = line_surf.get_rect(midtop=(self.left_panel.rect.width // 2 + 20, 80 + i * 30))
+                line_surf = self.question_font.render(line, True, (0, 0, 0))
+                line_rect = line_surf.get_rect(midtop=(self.left_panel.rect.width // 2 + 20, 110 + i * 30))
                 self.screen.blit(line_surf, line_rect)
             
             for button in self.option_buttons:
