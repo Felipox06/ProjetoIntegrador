@@ -75,7 +75,7 @@ class MenuScreen:
 
             # Desenhar título e subtítulo
             title_surf = self.title_font.render("Menu Principal", True, (0, 0, 0))
-            title_rect = title_surf.get_rect(center=(self.width // 2, 60))
+            title_rect = title_surf.get_rect(center=(self.width // 2, 45))
             self.screen.blit(title_surf, title_rect)
 
             subtitle = f"Bem-Vindo {'PoliMestre' if self.user_data['user_type'] == 'teacher' else 'PoliGamer'}"

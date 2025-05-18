@@ -46,7 +46,7 @@ except ImportError:
 class NeumorphicPanel:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
         self.rect = pygame.Rect(x, y, width, height)
-        self.bg_color = bg_color
+        self.bg_color = (30, 180, 195)
         self.light_shadow = light_shadow
         self.dark_shadow = dark_shadow
         self.border_radius = border_radius
@@ -229,6 +229,8 @@ class LoginScreen:
         
         # Criar elementos de UI
         center_x = self.width // 2
+
+        form_base_y = 160
         
         # Painel principal
         self.main_panel = NeumorphicPanel(
@@ -239,14 +241,14 @@ class LoginScreen:
         
         # Campos de entrada
         self.username_input = NeumorphicInput(
-            center_x - 150, 280,
+            center_x - 150, form_base_y + 40,
             300, 50,
             self.bg_color, self.light_shadow, self.dark_shadow,
             "Usuário", self.text_font
         )
         
         self.password_input = NeumorphicInput(
-            center_x - 150, 350,
+            center_x - 150, form_base_y + 105,
             300, 50,
             self.bg_color, self.light_shadow, self.dark_shadow,
             "Senha", self.text_font,
@@ -255,7 +257,7 @@ class LoginScreen:
         
         # Botões
         self.login_button = NeumorphicButton(
-            center_x - 150, 420,300, 50,
+            center_x - 150, form_base_y + 175, 300, 50,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "ENTRAR", self.text_font
         )
@@ -264,7 +266,7 @@ class LoginScreen:
         
         # Botões de seleção de tipo de usuário
         self.student_button = NeumorphicButton(
-            center_x - 150, 500,
+            center_x - 150, form_base_y + 235,
             140, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "Aluno", self.text_font,
@@ -272,7 +274,7 @@ class LoginScreen:
         )
         
         self.teacher_button = NeumorphicButton(
-            center_x + 10, 500,
+            center_x + 10, form_base_y + 235,
             140, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "Professor", self.text_font,
@@ -363,8 +365,8 @@ class LoginScreen:
     
     # Resto do código de desenho existente...
         # Desenha o título
-        title_text = self.title_font.render("Quiz do Milhão", True, (60, 60, 60))
-        title_rect = title_text.get_rect(center=(self.width // 2, 200))
+        title_text = self.title_font.render("Poligame Show", True, (60, 60, 60))
+        title_rect = title_text.get_rect(center=(self.width // 2, 145))
         self.screen.blit(title_text, title_rect)
         
         # Desenha os campos de entrada
@@ -377,8 +379,8 @@ class LoginScreen:
         self.teacher_button.draw(self.screen)
         
         # Desenha texto explicativo
-        type_text = self.text_font.render("Selecione seu tipo de usuário:", True, (60, 60, 60))
-        type_rect = type_text.get_rect(center=(self.width // 2, 488))
+        type_text = self.text_font.render("Selecione seu tipo de usuário", True, (60, 60, 60))
+        type_rect = type_text.get_rect(center=(self.width // 2, 450))
         self.screen.blit(type_text, type_rect)
         
         # Atualiza a tela
