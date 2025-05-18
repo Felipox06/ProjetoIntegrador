@@ -161,7 +161,7 @@ class MockQuestionGenerator:
             [20000, 30000, 50000, 100000, 200000],
             [300000, 500000, 750000, 1000000, 2000000]
         ]
-    
+
     def get_questions(self, count=TOTAL_QUESTIONS):
         questions = []
         easy_count = min(5, count)
@@ -177,7 +177,7 @@ class MockQuestionGenerator:
             questions.append(self._generate_question(difficulty=2))
         
         return questions
-    
+
     def _generate_question(self, difficulty):
         if self.subject == "Matematica":
             if difficulty == 0:
@@ -221,7 +221,7 @@ class MockQuestionGenerator:
                 correct = random.randint(0, 3)
                 
         return Question(text, options, correct, difficulty)
-    
+
     def get_money_for_question(self, question_number):
         difficulty = 0 if question_number < 5 else 1 if question_number < 10 else 2
         value_index = question_number % 5
@@ -234,7 +234,7 @@ class QuizScreen:
         self.width, self.height = screen.get_size()
         self.user_data = user_data
         self.game_config = game_config
-        
+
         self.bg_color = COLORS["background"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
@@ -264,6 +264,7 @@ class QuizScreen:
         self.show_help_options = False
         self.show_hint = False
         self.help_buttons = []
+        self.show_confirmation = False
         
         self.setup_ui()
         
@@ -321,6 +322,17 @@ class QuizScreen:
             border_radius=15
         )
         
+        # Painel de confirmação
+        self.confirmation_panel = NeumorphicPanel(
+            self.width // 2 - 200,
+            self.height // 2 - 100,
+            400, 200,
+            self.bg_color,
+            self.light_shadow,
+            self.dark_shadow,
+            border_radius=15
+        )
+        
         # Botão para fechar a dica
         self.close_hint_button = NeumorphicButton(
             self.width // 2 - 20,
@@ -332,6 +344,29 @@ class QuizScreen:
             COLORS["error"],
             "X", self.title_font,
             is_circular=True
+        )
+        
+        # Botões de confirmação
+        self.confirm_yes_button = NeumorphicButton(
+            self.width // 2 - 70,
+            self.height // 2 + 30,
+            100, 40,
+            self.bg_color,
+            self.light_shadow,
+            self.dark_shadow,
+            COLORS["success"],
+            "Sim", self.option_font
+        )
+        
+        self.confirm_no_button = NeumorphicButton(
+            self.width // 2 + 70,
+            self.height // 2 + 30,
+            100, 40,
+            self.bg_color,
+            self.light_shadow,
+            self.dark_shadow,
+            COLORS["error"],
+            "Não", self.option_font
         )
         
         # Botões de opções (dentro do painel esquerdo)
@@ -453,7 +488,7 @@ class QuizScreen:
                 self.option_buttons[i].correct = None
                 
             self.progress_bar.update(self.current_question)
-    
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -478,6 +513,19 @@ class QuizScreen:
                         self.show_hint = False
                         continue
                 
+                # Verificar cliques nos botões de confirmação
+                if self.show_confirmation:
+                    if self.confirm_yes_button.is_clicked(mouse_pos):
+                        self.confirm_yes_button.pressed = True
+                        self.show_confirmation = False
+                        self.check_answer()
+                        self.show_result = True
+                    elif self.confirm_no_button.is_clicked(mouse_pos):
+                        self.confirm_no_button.pressed = True
+                        self.show_confirmation = False
+                        self.selected_option = None
+                    continue
+                
                 # Verificar cliques nos botões de ajuda
                 if self.show_help_options:
                     for button in self.help_buttons:
@@ -498,12 +546,11 @@ class QuizScreen:
                     continue
                 
                 # Verificar cliques nos botões de opções
-                if not self.show_result and not self.show_hint:
+                if not self.show_result and not self.show_hint and not self.show_confirmation:
                     for i, button in enumerate(self.option_buttons):
                         if button.is_clicked(mouse_pos):
                             self.selected_option = i
-                            self.check_answer()
-                            self.show_result = True
+                            self.show_confirmation = True
                             break
                 
                 # Verificar clique no botão próxima
@@ -521,7 +568,7 @@ class QuizScreen:
                         return {"action": "back_to_menu", "money_earned": self.saved_money}
         
         return {"action": "none"}
-    
+
     def handle_help_button(self, button):
         current_question = self.questions[self.current_question]
         
@@ -549,7 +596,7 @@ class QuizScreen:
             # Mostrar dica sobre o tema
             current_question.used_help["hint"] = True
             self.show_hint = True
-    
+
     def check_answer(self):
         current = self.questions[self.current_question]
         self.answer_correct = (self.selected_option == current.correct_option)
@@ -569,13 +616,14 @@ class QuizScreen:
         else:
             self.waiting_for_next = True
             self.wait_timer = pygame.time.get_ticks()
-    
+
     def go_to_next_question(self):
         self.selected_option = None
         self.show_result = False
         self.next_button.pressed = False
         self.show_help_options = False
         self.show_hint = False
+        self.show_confirmation = False
         
         if not self.answer_correct:
             self.game_over = True
@@ -588,14 +636,14 @@ class QuizScreen:
             return
         
         self.update_question_display()
-    
+
     def update(self):
         if self.waiting_for_next:
             current_time = pygame.time.get_ticks()
             if current_time - self.wait_timer > 2000:
                 self.waiting_for_next = False
                 self.go_to_next_question()
-    
+
     def draw(self):
         self.screen.fill(self.bg_color)
         
@@ -717,9 +765,30 @@ class QuizScreen:
                 
                 # Desenhar botão de fechar
                 self.close_hint_button.draw(self.screen)
+            
+            # Mostrar painel de confirmação se necessário
+            if self.show_confirmation:
+                # Desenhar overlay semi-transparente
+                overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 128))  # Preto semi-transparente
+                self.screen.blit(overlay, (0, 0))
+                
+                # Desenhar painel de confirmação
+                self.confirmation_panel.draw(self.screen)
+                
+                # Texto de confirmação
+                confirm_text = "Tem certeza da sua resposta?"
+                confirm_surf = self.question_font.render(confirm_text, True, (50, 50, 50))
+                confirm_rect = confirm_surf.get_rect(center=(self.confirmation_panel.rect.centerx, 
+                                                      self.confirmation_panel.rect.y + 50))
+                self.screen.blit(confirm_surf, confirm_rect)
+                
+                # Desenhar botões de confirmação
+                self.confirm_yes_button.draw(self.screen)
+                self.confirm_no_button.draw(self.screen)
         
         pygame.display.flip()
-    
+
     def wrap_text(self, text, font, max_width):
         words = text.split(' ')
         lines = []
@@ -743,7 +812,7 @@ class QuizScreen:
             lines.append(' '.join(current_line))
             
         return lines
-    
+
     def run(self):
         while self.running:
             result = self.handle_events()
