@@ -16,8 +16,8 @@ COLORS = {
 }
 
 # Configuracoes de jogo
-CHECKPOINT_INTERVALS = 5  # A cada 5 perguntas
-TOTAL_QUESTIONS = 15  # Total de 15 perguntas por jogo
+CHECKPOINT_INTERVALS = 5
+TOTAL_QUESTIONS = 15
 
 # Niveis de dificuldade
 DIFFICULTY_LEVELS = ['Facil', 'Medio', 'Dificil']

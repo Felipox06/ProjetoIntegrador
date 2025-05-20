@@ -34,7 +34,7 @@ class MenuScreen:
         # Definir botões conforme tipo de usuário
         if self.user_data['user_type'] == 'teacher':
             self.buttons = [
-                {"label": "Gerenciar Usuário", "rect": pygame.Rect(250, 150, 300, 50), "action": "create_user"},
+                {"label": "Gerenciar Usuário", "rect": pygame.Rect(250, 150, 300, 50), "action": "manage_students"},  # <-- Corrigido aqui
                 {"label": "Gerenciar Turma", "rect": pygame.Rect(250, 220, 300, 50), "action": "create_class"},
                 {"label": "Gerenciar Questão", "rect": pygame.Rect(250, 290, 300, 50), "action": "edit_questions"},
                 {"label": "Visualizar Ranking", "rect": pygame.Rect(250, 360, 300, 50), "action": "show_ranking"},
