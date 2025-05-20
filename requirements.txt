@@ -1,0 +1,5 @@
+pygame
+python-dotenv 
+mysql-connector-python
+# Anotação
+# Arquivo requirements faz a instalação dos imports necessários
