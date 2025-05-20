@@ -2,6 +2,7 @@ import pygame
 import sys
 import os
 from pygame.locals import *
+from screens.student.stats_screen import ScoreScreen  # Importe a tela de pontuação
 
 # Verificar existência de pastas essenciais
 if not os.path.exists("screens"):
@@ -13,10 +14,10 @@ SCREEN_HEIGHT = 600
 
 # Cores no formato RGB
 COLORS = {
-    "background": (30, 180, 195),
-    "light_shadow": (255, 255, 255),
-    "dark_shadow": (20, 140, 150),
-    "accent": (251, 164, 31),
+    "background": (30, 180, 195),     # #1EB4C3
+    "light_shadow": (255, 255, 255),  # Branco
+    "dark_shadow": (20, 140, 150),    # #148C96
+    "accent": (251, 164, 31),         # Laranja #FBA41F
     "text": (0, 0, 0),
     "black": (0, 0, 0),
     "success": (75, 181, 67),
@@ -141,7 +142,10 @@ def main():
                 question_editor = QuestionEditor(screen, user_data)
             elif result["action"] == "show_history" and user_data["user_type"] == "student":
                 print("Mostrando histórico de jogos...")
-                next_screen = "menu"
+                next_screen = "menu"  # Temporário: volta para o menu
+            elif result["action"] == "show_score" and user_data["user_type"] == "student":
+                print("Mostrando pontuação...")
+                next_screen = "score_screen"  # Navegar para a tela de pontuação
             elif result["action"] == "logout":
                 next_screen = "login"
                 user_data = None
@@ -199,7 +203,7 @@ def main():
                 if "money_earned" in result and user_data["user_type"] == "student":
                     student_data["money"] += result["money_earned"]
                     student_data["games_played"] += 1
-
+                    
                     print(f"Jogo finalizado! Dinheiro ganho: R$ {result['money_earned']:,}")
                     print(f"Total de dinheiro acumulado: R$ {student_data['money']:,}")
 
@@ -213,9 +217,20 @@ def main():
             if result["action"] == "back_to_menu":
                 print("Voltando para o menu a partir do editor de perguntas")
                 next_screen = "menu"
+                # Opcionalmente, pode mostrar uma mensagem de sucesso se a pergunta foi salva
             elif result["action"] == "question_saved":
                 print("Questão salva")
-
+        
+        elif next_screen == "score_screen":
+            # Exibir a tela de pontuação
+            current_screen = ScoreScreen(player_id=1, game_results={"score": 100})  # Passe os dados necessários
+            result = current_screen.run()
+            
+            if result == "menu":
+                next_screen = "menu"  # Depois de ver a pontuação, volta para o menu
+            else:
+                running = False
+        
         else:
             running = False
 
