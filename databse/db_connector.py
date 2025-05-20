@@ -19,7 +19,6 @@ print(f"USER={MYSQL_USERNAME}")
 print(f"PASSWORD={MYSQL_PASSWORD}")
 print(f"DATABASE={MYSQL_DATABASE}")
 
-
 try: 
     conn = mysql.connector.connect(
         host = HOST,
@@ -28,14 +27,9 @@ try:
         password = MYSQL_PASSWORD,
         database = MYSQL_DATABASE
     )
-    print('conexão bem sucedida!!')
-
-    cursor = conn.cursor()
-    cursor.execute("SHOW TABLES;")
-    for (table,) in cursor:
-        print(table)
-
+    print('Conexão bem sucedida!!')
 
 except mysql.connector.Error as err:
     print(f'Erro ao conectar: {err}')
+
 
