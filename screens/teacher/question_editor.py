@@ -287,7 +287,7 @@ class QuestionEditor:
         
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 32, bold=True)
-        self.subtitle_font = pygame.font.SysFont('Arial', 24, bold=True)
+        self.subtitle_font = pygame.font.SysFont('Arial', 20, bold=True)
         self.text_font = pygame.font.SysFont('Arial', 18)
         self.small_font = pygame.font.SysFont('Arial', 14)
         
@@ -344,8 +344,8 @@ class QuestionEditor:
             col = i % 2  # 0 ou 1 (coluna)
             row = i // 2  # linha
             
-            btn_x = 60 + col * (btn_width + 10)
-            btn_y = 140 + row * (btn_height + btn_spacing)
+            btn_x = 55 + col * (btn_width + 10)
+            btn_y = 128 + row * (btn_height + btn_spacing)
             
             button = NeumorphicButton(
                 btn_x, btn_y,
@@ -360,12 +360,12 @@ class QuestionEditor:
         grade_y_start = 140 + ((len(SUBJECTS) + 1) // 2) * (btn_height + btn_spacing) + 20
         
         # Título para a seção de séries
-        self.grade_section_y = grade_y_start
+        self.grade_section_y = grade_y_start - 28
         
         # Botões para séries (anos) - layout horizontal
         self.grade_buttons = []
         grade_btn_width = (left_panel_width - 60) / len(GRADE_LEVELS) - 5
-        grade_y = grade_y_start + 30
+        grade_y = grade_y_start 
         
         for i, grade in enumerate(GRADE_LEVELS):
             btn_x = 60 + i * (grade_btn_width + 10)
@@ -402,11 +402,11 @@ class QuestionEditor:
         
         # Campos do editor (lado direito) - ajustados para o novo painel
         editor_x = left_panel_width + 60
-        editor_width = right_panel_width - 100
+        editor_width = right_panel_width - 120
         
         # Coordenadas iniciais para o editor
         question_y = 120
-        options_y = 230
+        options_y = 250
         option_height = 45
         option_spacing = 10
         last_option_bottom = options_y + 4 * (option_height + option_spacing)
@@ -426,7 +426,7 @@ class QuestionEditor:
         self.option_inputs = []
         option_labels = ["A", "B", "C", "D"]
         option_height = 45
-        option_spacing = 10
+        option_spacing = 8
         
         for i in range(4):
             option = NeumorphicInput(
@@ -447,10 +447,10 @@ class QuestionEditor:
             multiline=True, max_length=300
         )
         
-        # Botões para salvar e cancelar - bem posicionados no fundo da tela
+        # Botões para salvar e cancelar 
         button_width = 150
         button_height = 50
-        button_y = self.height - 80
+        button_y = self.height - 60
         
         # Botão CANCELAR à esquerda
         self.cancel_button = NeumorphicButton(
@@ -771,15 +771,10 @@ class QuestionEditor:
         self.screen.blit(question_text, question_rect)
         
         options_text = self.subtitle_font.render("Alternativas:", True, (60, 60, 60))
-        options_rect = options_text.get_rect(topleft=(self.option_inputs[0].rect.x, self.option_inputs[0].rect.y - 30))
+        options_rect = options_text.get_rect(topleft=(self.option_inputs[0].rect.x, self.option_inputs[0].rect.y - 20))
         self.screen.blit(options_text, options_rect)
         
-        correct_text = self.subtitle_font.render("Correta", True, (60, 60, 60))
-        correct_rect = correct_text.get_rect(topleft=(self.correct_option_buttons[0].rect.x - 15, self.option_inputs[0].rect.y - 30))
-        correct_rect.centerx = self.correct_option_buttons[0].rect.centerx
-        self.screen.blit(correct_text, correct_rect)
-        
-        explanation_text = self.subtitle_font.render("Explicação:", True, (60, 60, 60))
+        explanation_text = self.subtitle_font.render("Dica sobre Tema:", True, (60, 60, 60))
         explanation_rect = explanation_text.get_rect(topleft=(self.explanation_input.rect.x, self.explanation_input.rect.y - 30))
         self.screen.blit(explanation_text, explanation_rect)
         
