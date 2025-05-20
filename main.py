@@ -73,7 +73,12 @@ print("Arquivo config.py criado com sucesso!")
 
 # Importar as telas
 try:
-    from screens.teacher.question_editor import QuestionEditor
+    from screens.teacher.ranking_screen import RankingScreen
+    from screens.teacher.question_edit_screen import QuestionEditScreen
+    from screens.teacher.question_remove_screen import QuestionRemoveScreen
+    from screens.teacher.question_management_screen import QuestionManagementScreen
+    from screens.student.game_history import GameHistoryScreen
+    from screens.teacher.question_creator import QuestionEditor
     from screens.login_screen import LoginScreen
     print("Login Screen importada com sucesso!")
     from screens.menu_screen import MenuScreen
@@ -129,28 +134,99 @@ def main():
             
             if result["action"] == "play_game":
                 next_screen = "game_config"
-            elif result["action"] == "show_ranking":
+            elif result["action"] == "show_ranking" and user_data["user_type"] == "teacher":
                 print("Mostrando ranking...")
-                next_screen = "menu"  # Temporário: volta para o menu
+                next_screen = "ranking_screen"  # Temporário: volta para o menu
             elif result["action"] == "show_profile":
                 print("Mostrando perfil...")
                 next_screen = "menu"  # Temporário: volta para o menu
             elif result["action"] == "manage_students" and user_data["user_type"] == "teacher":
                 print("Gerenciando alunos...")
                 next_screen = "menu"  # Temporário: volta para o menu
-            elif result["action"] == "edit_questions" and user_data["user_type"] == "teacher":
-                print("Mudando para tela de edição de perguntas")
-                next_screen = "question_editor"
-                question_editor = QuestionEditor(screen, user_data)
+            elif result["action"] == "manage_questions" and user_data["user_type"] == "teacher":
+                print("Mudando para tela de gerenciamento de perguntas")
+                next_screen = "question_management"
             elif result["action"] == "show_history" and user_data["user_type"] == "student":
                 print("Mostrando histórico de jogos...")
-                next_screen = "menu"  # Temporário: volta para o menu
+                next_screen = "game_history"
             elif result["action"] == "logout":
                 next_screen = "login"
                 user_data = None
             else:
                 running = False
                 
+        
+        elif next_screen == "ranking_screen":
+          current_screen = RankingScreen(screen, user_data)
+          result = current_screen.run()
+    
+          if result["action"] == "back_to_menu":
+             next_screen = "menu"
+          else:
+             running = False
+
+        elif next_screen == "question_management":
+          current_screen = QuestionManagementScreen(screen, user_data)
+          result = current_screen.run()
+        
+          if result["action"] == "create_question":
+              next_screen = "question_creator"  # Usa o editor existente para criação
+          elif result["action"] == "edit_question":
+              next_screen = "question_edit"  # Precisaria criar essa tela
+          elif result["action"] == "remove_question":
+              next_screen = "question_remove"  # Precisaria criar essa tela
+          elif result["action"] == "back_to_menu":
+              next_screen = "menu"
+          else:
+              running = False
+
+        elif next_screen == "question_creator":
+        # Cria uma nova instância do editor
+          current_screen = QuestionEditor(screen, user_data)
+          result = current_screen.run()
+    
+          if result["action"] == "question_saved" or result["action"] == "back_to_menu":
+         # Após salvar ou cancelar, volta para a tela de gerenciamento
+             next_screen = "question_management"
+          else:
+             running = False
+
+
+        elif next_screen == "question_edit":
+          current_screen = QuestionEditScreen(screen, user_data)
+          result = current_screen.run()
+    
+          if result["action"] == "edit_selected_question":
+           # Abrir o editor com a questão selecionada para edição
+           question_to_edit = result["question"]
+           current_screen = QuestionEditor(screen, user_data, question_to_edit)
+           result = current_screen.run()
+           # Voltar para a tela de edição após salvar/cancelar
+           next_screen = "question_edit"
+          elif result["action"] == "back_to_menu":
+           next_screen = "question_management"
+          else:
+            running = False
+
+        elif next_screen == "question_remove":
+          current_screen = QuestionRemoveScreen(screen, user_data)
+          result = current_screen.run()
+    
+          if result["action"] == "back_to_menu":
+           next_screen = "question_management"
+          else:
+           running = False
+     
+        elif next_screen == "game_history":
+            current_screen = GameHistoryScreen(screen, user_data)  
+            result = current_screen.run()      
+
+            if result["action"] == "back_to_menu":
+               next_screen = "menu"
+            else:
+               running = False
+
+
         elif next_screen == "game_config":
             current_screen = GameConfigScreen(screen, user_data)
             result = current_screen.run()
@@ -183,20 +259,7 @@ def main():
                 next_screen = "menu"
             else:
                 running = False
-        
-        elif next_screen == "question_editor":
-            result = question_editor.run()
-        
-            if result["action"] == "back_to_menu":
-              print("Voltando para o menu a partir do editor de perguntas")
-              next_screen = "menu"
-              # Opcionalmente, pode mostrar uma mensagem de sucesso se a pergunta foi salva
-            
-            elif result["action"] == "question_saved":
-                print("Questão salva")
-            
-        else:
-           running = "False"
+
     # Encerrar o pygame
     pygame.quit()
     sys.exit()

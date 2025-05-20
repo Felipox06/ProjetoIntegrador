@@ -149,7 +149,7 @@ class MenuScreen:
         
         # Dados simulados para testes
         self.student_data = {
-            "money": 50000,
+            "money": 5000,
             "games_played": 8,
             "last_game_date": "2025-04-15"
         }
@@ -158,55 +158,48 @@ class MenuScreen:
         buttons = []
         center_x = self.width // 2
         
-        # Botões comuns para ambos os tipos de usuário
-        buttons.append(NeumorphicButton(
-            center_x - 250, 150,
-            500, 60,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "JOGAR", self.subtitle_font
-        ))
-        
-        buttons.append(NeumorphicButton(
-            center_x - 250, 230,
-            500, 60,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "RANKING", self.subtitle_font
-        ))
-        
-        buttons.append(NeumorphicButton(
-            center_x - 250, 310,
-            500, 60,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "PERFIL", self.subtitle_font
-        ))
-        
-        # Botões específicos para professores
-        if self.user_data["user_type"] == "teacher":
+        # Criar botões baseados no tipo de usuário
+        if self.user_data["user_type"] == "student":
+            # Para estudantes - apenas JOGAR e HISTÓRICO
             buttons.append(NeumorphicButton(
-                center_x - 250, 390,
-                240, 60,
+                center_x - 250, 180,
+                500, 60,
                 self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, "GERENCIAR ALUNOS", self.text_font
+                self.accent_color, "JOGAR", self.subtitle_font
             ))
             
             buttons.append(NeumorphicButton(
-                center_x + 10, 390,
-                240, 60,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, "EDITAR PERGUNTAS", self.text_font
-            ))
-        else:
-            # Botão adicional para alunos
-            buttons.append(NeumorphicButton(
-                center_x - 250, 390,
+                center_x - 250, 270,
                 500, 60,
                 self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, "HISTÓRICO DE JOGOS", self.subtitle_font
+                self.accent_color, "HISTÓRICO", self.subtitle_font
+            ))
+        else:
+            # Para professores - novos botões simplificados
+           buttons.append(NeumorphicButton(
+               center_x - 250, 180,
+               500, 60,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+               self.accent_color, "JOGAR", self.subtitle_font
             ))
         
-        # Botão de sair
+           buttons.append(NeumorphicButton(
+               center_x - 250, 270,
+               500, 60,
+               self.bg_color, self.light_shadow, self.dark_shadow,
+               self.accent_color, "GERENCIAR QUESTÕES", self.subtitle_font
+            ))
+        
+           buttons.append(NeumorphicButton(
+               center_x - 250, 360,
+               500, 60,
+               self.bg_color, self.light_shadow, self.dark_shadow,
+               self.accent_color, "RANKING", self.subtitle_font
+            ))
+        
+        # Botão de sair (comum a ambos)
         buttons.append(NeumorphicButton(
-            center_x - 250, 470,
+            center_x - 250, 360 if self.user_data["user_type"] == "student" else 470,
             500, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de sair
@@ -227,25 +220,26 @@ class MenuScreen:
                 # Verificar cliques nos botões
                 for i, button in enumerate(self.buttons):
                     if button.is_clicked(mouse_pos):
-                        print(f"Botão clicado: {i} - {button.text}")
                         button.pressed = True
                         
-                        # Processar ação do botão
-                        if i == 0:  # JOGAR
-                            return {"action": "play_game"}
-                        elif i == 1:  # RANKING
-                            return {"action": "show_ranking"}
-                        elif i == 2:  # PERFIL
-                            return {"action": "show_profile"}
-                        elif i == 3:
-                            if self.user_data["user_type"] == "teacher":
-                                return {"action": "manage_students"}
-                            else:
+                        # Processar ação do botão para estudantes
+                        if self.user_data["user_type"] == "student":
+                            if i == 0:  # JOGAR
+                                return {"action": "play_game"}
+                            elif i == 1:  # HISTÓRICO
                                 return {"action": "show_history"}
-                        elif i == 4 and self.user_data["user_type"] == "teacher":
-                            return {"action": "edit_questions"}
-                        elif i == len(self.buttons) - 1:  # SAIR (último botão)
-                            return {"action": "logout"}
+                            elif i == 2:  # SAIR
+                                return {"action": "logout"}
+                       # Processar ação do botão para professores (nova configuração)
+                        else:
+                           if i == 0:  # JOGAR
+                               return {"action": "play_game"}
+                           elif i == 1:  # GERENCIAR QUESTÕES
+                               return {"action": "manage_questions"}
+                           elif i == 2:  # RANKING
+                               return {"action": "show_ranking"}
+                           elif i == 3:  # SAIR
+                               return {"action": "logout"}
         
         return {"action": "none"}
     
@@ -280,7 +274,7 @@ class MenuScreen:
         
         # Para alunos, mostrar dinheiro acumulado
         if self.user_data["user_type"] == "student":
-            money_text = self.text_font.render(f"R$ {self.student_data['money']}", True, (50, 150, 50))
+            money_text = self.text_font.render(f"R$ {self.student_data['money']:,}", True, (50, 150, 50))
             money_rect = money_text.get_rect(topleft=(70, 90))
             self.screen.blit(money_text, money_rect)
         
