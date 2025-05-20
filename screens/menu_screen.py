@@ -177,29 +177,37 @@ class MenuScreen:
         else:
             # Para professores - novos botões simplificados
            buttons.append(NeumorphicButton(
-               center_x - 250, 180,
-               500, 60,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-               self.accent_color, "JOGAR", self.subtitle_font
+              center_x - 250, 180,
+              500, 60,
+              self.bg_color, self.light_shadow, self.dark_shadow,
+              self.accent_color, "JOGAR", self.subtitle_font
             ))
         
            buttons.append(NeumorphicButton(
-               center_x - 250, 270,
-               500, 60,
-               self.bg_color, self.light_shadow, self.dark_shadow,
-               self.accent_color, "GERENCIAR QUESTÕES", self.subtitle_font
+              center_x - 250, 260,
+             500, 60,
+             self.bg_color, self.light_shadow, self.dark_shadow,
+             self.accent_color, "GERENCIAR QUESTÕES", self.subtitle_font
             ))
         
            buttons.append(NeumorphicButton(
-               center_x - 250, 360,
-               500, 60,
-               self.bg_color, self.light_shadow, self.dark_shadow,
-               self.accent_color, "RANKING", self.subtitle_font
+              center_x - 250, 340,
+              500, 60,
+              self.bg_color, self.light_shadow, self.dark_shadow,
+              self.accent_color, "GERENCIAR TURMAS", self.subtitle_font
             ))
+           
+           buttons.append(NeumorphicButton(
+              center_x - 250, 420,
+              500, 60,
+              self.bg_color, self.light_shadow, self.dark_shadow,
+              self.accent_color, "RANKING", self.subtitle_font
+            ))
+           
         
         # Botão de sair (comum a ambos)
         buttons.append(NeumorphicButton(
-            center_x - 250, 360 if self.user_data["user_type"] == "student" else 470,
+            center_x - 250, 500 if self.user_data["user_type"] == "student" else 470,
             500, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de sair
@@ -236,9 +244,11 @@ class MenuScreen:
                                return {"action": "play_game"}
                            elif i == 1:  # GERENCIAR QUESTÕES
                                return {"action": "manage_questions"}
-                           elif i == 2:  # RANKING
+                           elif i == 2:  # GERENCIAR TURMAS
+                            return {"action": "manage_classes"}
+                           elif i == 3:  # RANKING
                                return {"action": "show_ranking"}
-                           elif i == 3:  # SAIR
+                           elif i == 4:  # SAIR
                                return {"action": "logout"}
         
         return {"action": "none"}

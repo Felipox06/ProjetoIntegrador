@@ -73,6 +73,10 @@ print("Arquivo config.py criado com sucesso!")
 
 # Importar as telas
 try:
+    from screens.teacher.class_create_screen import ClassCreateScreen
+    from screens.teacher.class_edit_screen import ClassEditScreen
+    from screens.teacher.class_remove_screen import ClassRemoveScreen
+    from screens.teacher.class_management_screen import ClassManagementScreen
     from screens.teacher.ranking_screen import RankingScreen
     from screens.teacher.question_edit_screen import QuestionEditScreen
     from screens.teacher.question_remove_screen import QuestionRemoveScreen
@@ -149,6 +153,9 @@ def main():
             elif result["action"] == "show_history" and user_data["user_type"] == "student":
                 print("Mostrando histórico de jogos...")
                 next_screen = "game_history"
+            elif result["action"] == "manage_classes" and user_data["user_type"] == "teacher": # Nova opção
+              print("Mudando para tela de gerenciamento de turmas")
+              next_screen = "class_management"
             elif result["action"] == "logout":
                 next_screen = "login"
                 user_data = None
@@ -156,6 +163,52 @@ def main():
                 running = False
                 
         
+        
+        elif next_screen == "class_management":
+            current_screen = ClassManagementScreen(screen, user_data)
+            result = current_screen.run()
+    
+            if result["action"] == "create_class":
+                print("Criando nova turma...")
+                next_screen = "create_class"  # Precisaremos implementar esta tela depois
+            elif result["action"] == "edit_class":
+                print("Editando turma existente...")
+                next_screen = "edit_class"    # Precisaremos implementar esta tela depois
+            elif result["action"] == "remove_class":
+             print("Removendo turma...")
+             next_screen = "remove_class"  # Precisaremos implementar esta tela depois
+            elif result["action"] == "back_to_menu":
+                next_screen = "menu"
+            else:
+                running = False
+        elif next_screen == "create_class":
+         current_screen = ClassCreateScreen(screen, user_data)
+         result = current_screen.run()
+    
+         if result["action"] == "class_saved" or result["action"] == "back_to_menu":
+              next_screen = "class_management"
+         else:
+            running = False
+
+        elif next_screen == "edit_class":
+         current_screen = ClassEditScreen(screen, user_data)
+         result = current_screen.run()
+    
+         if result["action"] == "back_to_menu":
+           next_screen = "class_management"
+         else:
+           running = False
+
+        elif next_screen == "remove_class":
+           current_screen = ClassRemoveScreen(screen, user_data)
+           result = current_screen.run()
+    
+           if result["action"] == "back_to_menu":
+                next_screen = "class_management"
+           else:
+                running = False
+                
+                
         elif next_screen == "ranking_screen":
           current_screen = RankingScreen(screen, user_data)
           result = current_screen.run()
