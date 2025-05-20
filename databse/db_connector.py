@@ -3,8 +3,9 @@ import mysql.connector
 from pathlib import Path
 from dotenv import load_dotenv
 
-dotenv_path = Path(__file__).resolve().parents[2] / '.env'
+dotenv_path = Path(__file__).resolve().parents[1] / '.env'
 load_dotenv(dotenv_path=dotenv_path)
+
 
 HOST = os.getenv('HOST')
 PORT = os.getenv('PORT')
@@ -28,7 +29,13 @@ try:
         database = MYSQL_DATABASE
     )
     print('conexão bem sucedida!!')
-    conn.close()
+
+    cursor = conn.cursor()
+    cursor.execute("SHOW TABLES;")
+    for (table,) in cursor:
+        print(table)
+
 
 except mysql.connector.Error as err:
     print(f'Erro ao conectar: {err}')
+
