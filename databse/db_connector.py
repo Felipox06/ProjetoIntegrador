@@ -3,7 +3,7 @@ import mysql.connector
 from pathlib import Path
 from dotenv import load_dotenv
 
-dotenv_path = Path(__file__).resolve().parents[1] / '.env'
+dotenv_path = Path(__file__).resolve().parents[2] / '.env'
 load_dotenv(dotenv_path=dotenv_path)
 
 HOST = os.getenv('HOST')
