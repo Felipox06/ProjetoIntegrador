@@ -1,17 +1,19 @@
-import db_connector 
+from databse.db_connector import conn 
 
-if not None:
+def verificar_login(usuario_ra, senha, tipo_usuario):
+    if not conn:
+        print("Erro na conexão com o banco de dados.")
+        return False
+
     cursor = conn.cursor()
 
-    cursor.execute("INSERT INTO usuarios (nome_usuario, senha_usuario, tipo_usuario) VALUES(%s, %s, %s);", 
-                 ("Rafael Gamero", "1542", "Aluno"))
+    if tipo_usuario == "student":
+        query = "SELECT * FROM alunos WHERE aluno_RA = %s AND senha_aluno = %s"
+    else:  # tipo_usuario == "teacher"
+        query = "SELECT * FROM professores WHERE prof_RA = %s AND senha_prof = %s"
 
-    conn.commit()
-    print("Dados inseridos com sucesso.")
+    cursor.execute(query, (usuario_ra, senha))
+    resultado = cursor.fetchone()
+    conn.close()
 
-    cursor.execute("SELECT * FROM usuarios;")
-    for row in cursor.fetchall():
-        print(row)
-
-    cursor.close()
-conn.close()
+    return resultado is not None

@@ -2,6 +2,8 @@ import pygame
 import sys
 import os
 from pygame.locals import *
+from databse.db_connector import conn
+from databse.data_manager import verificar_login
 
 # Cores do slide 2
 COLORS = {
@@ -75,7 +77,14 @@ class LoginScreen:
                     self.password_input.active = True
                 elif self.login_button.is_clicked(pos):
                     self.login_button.pressed = True
-                    return {"action": "login_success", "user_type": self.user_type, "username": self.username_input.text}
+                    usuario = self.username_input.text
+                    senha = self.password_input.text
+                    tipo = self.user_type
+                    if verificar_login(usuario, senha, tipo):
+                        print("Login bem-sucedido!")
+                        return{"action": "login_success", "user_type": tipo, "username": usuario}
+                    else:
+                        print("Usuário ou Senha inválidos!!!")                       
                 elif self.student_button.is_clicked(pos):
                     self.student_button.is_active = True
                     self.teacher_button.is_active = False
