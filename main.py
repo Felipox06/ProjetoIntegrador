@@ -148,7 +148,8 @@ def main():
             if result["action"] == "start_game":
                 game_config = {
                     "subject": result["subject"],
-                    "grade": result["grade"]
+                    "grade": result["grade"],
+                    "difficulty": result["difficulty"]
                 }
                 next_screen = "quiz"
             elif result["action"] == "back_to_menu":

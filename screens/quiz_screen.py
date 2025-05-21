@@ -5,7 +5,7 @@ import random
 import time
 from pygame.locals import *
 from models.question import Question
-from databse.data_manager import get_questions_from_db
+from databse.data_manager import get_questions_from_db, get_id_materia_by_nome
 
 # Configurações
 try:
@@ -218,27 +218,34 @@ class QuizScreen:
         self.info_font = pygame.font.SysFont('Arial', 16)
         self.small_font = pygame.font.SysFont('Arial', 14)
         
-        self.question_generator = MockQuestionGenerator(
-            game_config["subject"], 
-            game_config["grade"]
-        )
-        self.questions = self.question_generator.get_questions(TOTAL_QUESTIONS)
-        
-        self.current_question = 0
-        self.selected_option = None
-        self.answer_correct = None
-        self.accumulated_money = 0
-        self.saved_money = 0
-        self.game_over = False
-        self.show_result = False
-        self.waiting_for_next = False
-        self.wait_timer = 0
-        self.show_help_options = False
-        self.show_hint = False
-        self.help_buttons = []
-        self.show_confirmation = False
-        
-        self.setup_ui()
+        self.question_generator = subject = self.game_config["subject"]        # Matéria escolhida
+        grade = self.game_config["grade"]            # Série escolhida
+        difficulty = self.game_config["difficulty"]  # Dificuldade escolhida
+
+        # Pegando o id da matéria
+        id_materia = get_id_materia_by_nome(subject)
+
+        # Buscando as perguntas no banco
+        if id_materia:
+            self.questions = get_questions_from_db(
+                id_materia=id_materia,
+                serie=grade,
+                dificuldade=difficulty
+            )
+        else:
+            print("Erro: Matéria não encontrada.")
+            self.questions = []
+
+            self.current_question = 0
+            self.score = 0
+            self.show_hint = False
+            self.selected_option = None
+            self.correct_answer = None
+            current_question = self.questions[self.current_question]
+        if current_question.hint:
+            print("Dica:", current_question.hint)
+        else:
+            print("Essa pergunta não possui dica.")
         
     def setup_ui(self):
         # Painel esquerdo maior (75% da largura)

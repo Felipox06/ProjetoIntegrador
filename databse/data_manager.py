@@ -1,7 +1,7 @@
 from databse.db_connector import conn 
 from random import shuffle
 from models.question import Question
-# Função para Verificação do login
+# Função para verificação do login
 def verificar_login(usuario_ra, senha, tipo_usuario):
     if not conn:
         print("Erro na conexão com o banco de dados.")
@@ -23,17 +23,13 @@ def verificar_login(usuario_ra, senha, tipo_usuario):
 
 # Função para Buscar o id da matéria no banco de dados
 def get_id_materia_by_nome(nome_materia):
-    if not conn:
-        print("Erro na conexão com o banco de dados.")
-        return None
-
     cursor = conn.cursor()
     cursor.execute("SELECT id_materia FROM materias WHERE nome_materia = %s", (nome_materia,))
     resultado = cursor.fetchone()
     conn.close()
 
     if resultado:
-        return resultado[0]
+        return resultado[0]  
     return None
 
 
@@ -85,6 +81,7 @@ def get_questions_from_db(id_materia: int, total=15):
                     options=options,
                     correct_option=correct_index,
                     difficulty=dificuldade,
+                    hint=q["dicas"]
                 )
             )
 

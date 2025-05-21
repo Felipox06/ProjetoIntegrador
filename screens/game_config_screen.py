@@ -181,9 +181,13 @@ class GameConfigScreen:
                         self.selected_difficulty = DEFAULT_DIFFICULTIES[i]
                 if self.start_button.is_clicked(pos):
                     self.start_button.pressed = True
-                    if self.selected_subject and self.selected_grade:
-                        return {"action": "start_game", "subject": self.selected_subject,
-                                "grade": self.selected_grade, "difficulty": self.selected_difficulty}
+                    if self.selected_subject and self.selected_grade and self.selected_difficulty:
+                         return {
+                            "action": "start_game",
+                             "subject": self.selected_subject,
+                             "grade": self.selected_grade,
+                             "difficulty": self.selected_difficulty
+                         }
                 if self.back_button.is_clicked(pos):
                     self.back_button.pressed = True
                     return {"action": "back_to_menu"}
@@ -223,6 +227,12 @@ class GameConfigScreen:
 
         if not (self.selected_subject and self.selected_grade):
             hint = self.text_font.render("Selecione uma matéria e uma série para iniciar", True, (0, 0, 0))
+            self.screen.blit(hint, hint.get_rect(center=(self.width // 2, self.panel_y + 440)))
+
+        if not (self.selected_subject and self.selected_grade and self.selected_difficulty):
+            hint = self.text_font.render(
+            "Selecione matéria, série e dificuldade para iniciar", True, (0, 0, 0)
+            )
             self.screen.blit(hint, hint.get_rect(center=(self.width // 2, self.panel_y + 440)))
 
         pygame.display.flip()
