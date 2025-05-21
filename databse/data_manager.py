@@ -10,7 +10,7 @@ def verificar_login(usuario_ra, senha, tipo_usuario):
     if tipo_usuario == "student":
         query = "SELECT * FROM alunos WHERE aluno_RA = %s AND senha_aluno = %s"
     else:  # tipo_usuario == "teacher"
-        query = "SELECT * FROM professores WHERE prof_RA = %s AND senha_prof = %s"
+        query = "SELECT * FROM professores WHERE email_prof = %s AND senha_prof = %s"
 
     cursor.execute(query, (usuario_ra, senha))
     resultado = cursor.fetchone()
