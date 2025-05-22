@@ -2,7 +2,7 @@ import pygame
 import sys
 import os
 from pygame.locals import *
-from databse.db_connector import conn
+from databse.db_connector import getConnection
 from databse.data_manager import verificar_login
 
 # Cores do slide 2

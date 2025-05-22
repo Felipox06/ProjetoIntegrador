@@ -124,75 +124,12 @@ class ProgressBar:
                              (checkpoint_x, self.rect.y + self.rect.height), 2)
 
 
-class MockQuestionGenerator:
-    def __init__(self, subject, grade):
-        self.subject = subject
-        self.grade = grade
-        self.money_values = [
-            [1000, 2000, 3000, 5000, 10000],
-            [20000, 30000, 50000, 100000, 200000],
-            [300000, 500000, 750000, 1000000, 2000000]
-        ]
 
-    def get_questions(self, count=TOTAL_QUESTIONS):
-        questions = []
-        easy_count = min(5, count)
-        for i in range(easy_count):
-            questions.append(self._generate_question(difficulty=0))
-        
-        medium_count = min(5, count - easy_count)
-        for i in range(medium_count):
-            questions.append(self._generate_question(difficulty=1))
-        
-        hard_count = count - easy_count - medium_count
-        for i in range(hard_count):
-            questions.append(self._generate_question(difficulty=2))
-        
-        return questions
-
-    def _generate_question(self, difficulty):
-        if self.subject == "Matematica":
-            if difficulty == 0:
-                text = "Qual é o resultado de 7 x 8?"
-                options = ["54", "56", "64", "72"]
-                correct = 1
-            elif difficulty == 1:
-                text = "Qual é a área de um círculo com raio 5cm? (Use π = 3.14)"
-                options = ["25π cm²", "10π cm²", "15π cm²", "20π cm²"]
-                correct = 0
-            else:
-                text = "Qual é a solução da equação 2x² - 5x - 3 = 0?"
-                options = ["x = 3 ou x = -0.5", "x = 2.5 ou x = -0.5", "x = 3 ou x = -1", "x = 2 ou x = -1.5"]
-                correct = 0
-        elif self.subject == "Fisica":
-            if difficulty == 0:
-                text = "Qual é a unidade de medida da força no Sistema Internacional (SI)?"
-                options = ["Watt", "Joule", "Newton", "Pascal"]
-                correct = 2
-            elif difficulty == 1:
-                text = "Um objeto é lançado verticalmente para cima. No ponto mais alto da trajetória:"
-                options = ["A velocidade e a aceleração são nulas", "A velocidade é nula e a aceleração é g", 
-                           "A velocidade é g e a aceleração é nula", "A velocidade e a aceleração são iguais a g"]
-                correct = 1
-            else:
-                text = "Um capacitor de placas paralelas está conectado a uma bateria. O que acontece com a capacitância se a distância entre as placas for duplicada?"
-                options = ["Aumenta 2 vezes", "Diminui pela metade", "Não muda", "Aumenta 4 vezes"]
-                correct = 1
-        else:
-            if difficulty == 0:
-                text = f"Pergunta fácil de {self.subject} para o {self.grade}"
-                options = ["Opção A", "Opção B", "Opção C", "Opção D"]
-                correct = random.randint(0, 3)
-            elif difficulty == 1:
-                text = f"Pergunta média de {self.subject} para o {self.grade}"
-                options = ["Opção A", "Opção B", "Opção C", "Opção D"]
-                correct = random.randint(0, 3)
-            else:
-                text = f"Pergunta difícil de {self.subject} para o {self.grade}"
-                options = ["Opção A", "Opção B", "Opção C", "Opção D"]
-                correct = random.randint(0, 3)
-                
-        return Question(text, options, correct, difficulty)
+    MONEY_VALUES = [
+        [1000, 2000, 3000, 5000, 10000],
+        [20000, 30000, 50000, 100000, 200000],
+        [300000, 500000, 750000, 1000000, 2000000]
+    ]
 
     def get_money_for_question(self, question_number):
         difficulty = 0 if question_number < 5 else 1 if question_number < 10 else 2
@@ -211,21 +148,19 @@ class QuizScreen:
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
-        
+
         self.title_font = pygame.font.SysFont('Arial', 28, bold=True)
         self.question_font = pygame.font.SysFont('Arial', 22)
         self.option_font = pygame.font.SysFont('Arial', 18)
         self.info_font = pygame.font.SysFont('Arial', 16)
         self.small_font = pygame.font.SysFont('Arial', 14)
-        
-        self.question_generator = subject = self.game_config["subject"]        # Matéria escolhida
-        grade = self.game_config["grade"]            # Série escolhida
-        difficulty = self.game_config["difficulty"]  # Dificuldade escolhida
 
-        # Pegando o id da matéria
+        subject = self.game_config["subject"]
+        grade = self.game_config["grade"]
+        difficulty = self.game_config["difficulty"]
+
         id_materia = get_id_materia_by_nome(subject)
 
-        # Buscando as perguntas no banco
         if id_materia:
             self.questions = get_questions_from_db(
                 id_materia=id_materia,
@@ -233,19 +168,101 @@ class QuizScreen:
                 dificuldade=difficulty
             )
         else:
-            print("Erro: Matéria não encontrada.")
+            print("❌ Erro: Matéria não encontrada no banco.")
             self.questions = []
 
-            self.current_question = 0
-            self.score = 0
-            self.show_hint = False
-            self.selected_option = None
-            self.correct_answer = None
-            current_question = self.questions[self.current_question]
-        if current_question.hint:
-            print("Dica:", current_question.hint)
-        else:
-            print("Essa pergunta não possui dica.")
+        self.current_question = 0
+        self.score = 0
+        self.show_hint = False
+        self.selected_option = None
+        self.correct_answer = None
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    self.running = False
+                    return {"action": "back_to_menu"}
+
+                if event.key == K_h:
+                    self.show_hint = not self.show_hint  # Toggle da dica
+
+            if event.type == MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                # Aqui você pode implementar o clique nas alternativas
+
+        return {"action": "none"}
+
+    def update(self):
+        pass  # Pode colocar lógica futura aqui, como tempo ou animações
+
+    def draw(self):
+        self.screen.fill(self.bg_color)
+
+        if not self.questions:
+            error_text = self.title_font.render(
+                "❌ Nenhuma pergunta encontrada.", True, (255, 0, 0)
+            )
+            self.screen.blit(
+                error_text,
+                error_text.get_rect(center=(self.width // 2, self.height // 2))
+            )
+            pygame.display.flip()
+            return
+
+        current_question = self.questions[self.current_question]
+
+        # Título ou pergunta
+        question_text = self.question_font.render(
+            current_question.text, True, COLORS["text"]
+        )
+        self.screen.blit(question_text, (50, 50))
+
+        # Alternativas
+        for idx, option in enumerate(current_question.options):
+            option_text = self.option_font.render(
+                f"{chr(65 + idx)}. {option}", True, COLORS["text"]
+            )
+            self.screen.blit(option_text, (100, 150 + idx * 40))
+
+        # Dica
+        if self.show_hint and current_question.hint:
+            hint_box = pygame.Surface((self.width - 100, 60))
+            hint_box.fill(COLORS["accent"])
+            self.screen.blit(hint_box, (50, self.height - 100))
+
+            hint_text = self.info_font.render(
+                f"Dica: {current_question.hint}", True, (0, 0, 0)
+            )
+            self.screen.blit(hint_text, (60, self.height - 85))
+
+        # Info sobre como abrir dica
+        hint_instruction = self.small_font.render(
+            "Pressione 'H' para exibir/ocultar a dica. ESC para sair.",
+            True,
+            (0, 0, 0)
+        )
+        self.screen.blit(hint_instruction, (50, self.height - 30))
+
+        pygame.display.flip()
+
+    def run(self):
+        clock = pygame.time.Clock()
+
+        while self.running:
+            result = self.handle_events()
+            if result["action"] == "back_to_menu":
+                return result
+
+            self.update()
+            self.draw()
+            clock.tick(60)
+
+        return {"action": "back_to_menu"}
         
     def setup_ui(self):
         # Painel esquerdo maior (75% da largura)
