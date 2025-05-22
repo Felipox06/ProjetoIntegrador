@@ -21,18 +21,13 @@ print(f"DATABASE={MYSQL_DATABASE}")
 
 
 def getConnection():
-    try: 
-        conn = mysql.connector.connect(
-            host=HOST,
-            port=int(PORT),
-            user=MYSQL_USERNAME, 
-            password=MYSQL_PASSWORD,
-            database=MYSQL_DATABASE
-        )
-        print('Conexão bem sucedida!!')
-        return conn
-        
-    except mysql.connector.Error as err:
-        print(f'Erro ao conectar ao banco de dados: {err}')
+    return mysql.connector.connect(
+        host=os.getenv('HOST'),
+        port=int(os.getenv('PORT')),
+        user=os.getenv('USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DATABASE'),
+        ssl_ca=os.getenv('SSL_CA')  # Se estiver usando Aiven com SSL
+    )
 
 

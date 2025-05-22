@@ -21,22 +21,56 @@ def verificar_login(usuario_ra, senha, tipo_usuario):
 
     return resultado is not None
 
+# Função para pegar o iD da série
+def get_id_serie_by_nome(nome_serie):
+    conn = getConnection()
+    cursor = conn.cursor()
+    # Ajuste esta query para sua tabela de séries (ex: 'series') e colunas (ex: 'id_serie', 'nome_serie')
+    cursor.execute(
+        "SELECT id_serie FROM series WHERE LOWER(nome_serie) = LOWER(%s)", 
+        (nome_serie,)
+    )
+    resultado = cursor.fetchone()
+    conn.close()
+    if resultado:
+        return resultado[0]
+    print(f"❌ Série '{nome_serie}' não encontrada no banco.")
+    return None
+
+# Função para pegar o id da dificuldade
+def get_id_dificuldade_by_nome(nome_dificuldade):
+    conn = getConnection()
+    cursor = conn.cursor()
+    # Ajuste esta query para sua tabela de dificuldades e colunas
+    cursor.execute(
+        "SELECT id_dificuldade FROM dificuldades WHERE LOWER(nome_dificuldade) = LOWER(%s)", 
+        (nome_dificuldade,)
+    )
+    resultado = cursor.fetchone()
+    conn.close()
+    if resultado:
+        return resultado[0]
+    print(f"❌ Dificuldade '{nome_dificuldade}' não encontrada no banco.")
+    return None
 
 # Função para Buscar o id da matéria no banco de dados
 def get_id_materia_by_nome(nome_materia):
     conn = getConnection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id_materia FROM materias WHERE nome_materia = %s", (nome_materia,))
+    cursor.execute(
+        "SELECT id_materia FROM materias WHERE LOWER(nome_materia) = LOWER(%s)",
+        (nome_materia,)
+    )
     resultado = cursor.fetchone()
     conn.close()
-
     if resultado:
-        return resultado[0]  
+        return resultado[0]
+    print(f"❌ Matéria '{nome_materia}' não encontrada no banco.")
     return None
 
 
 # Função para Buscar questões para o quiz
-def get_questions_from_db(id_materia: int, total=15):
+def get_questions_from_db(id_materia: int, id_dificuldade: int, id_serie:int, total=15):
     conn = getConnection()
     if not conn:
         print("Erro na conexão com o banco de dados.")
@@ -53,11 +87,11 @@ def get_questions_from_db(id_materia: int, total=15):
         SELECT q.id_questao, q.enunciado_questao, q.dicas, d.nome_dificuldade
         FROM questoes q
         JOIN dificuldades d ON q.id_dificuldade = d.id_dificuldade
-        WHERE d.nome_dificuldade = %s AND q.id_materia = %s
+        WHERE d.nome_dificuldade = %s AND q.id_materia = %s AND q.id_serie = %s
         ORDER BY RAND()
         LIMIT %s
         """
-        cursor.execute(query, (dificuldade, id_materia, qtd))
+        cursor.execute(query, (dificuldade, id_materia, id_serie, qtd))
         questoes = cursor.fetchall()
 
         for q in questoes:

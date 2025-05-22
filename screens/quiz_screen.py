@@ -5,7 +5,7 @@ import random
 import time
 from pygame.locals import *
 from models.question import Question
-from databse.data_manager import get_questions_from_db, get_id_materia_by_nome
+from databse.data_manager import get_questions_from_db, get_id_materia_by_nome, get_id_serie_by_nome, get_id_dificuldade_by_nome
 
 # Configurações
 try:
@@ -139,11 +139,12 @@ class ProgressBar:
 class QuizScreen:
     def __init__(self, screen, user_data, game_config):
         self.screen = screen
-        self.running = True
+        self.running = True # Mantido se 'running' for controlado por esta tela
         self.width, self.height = screen.get_size()
         self.user_data = user_data
         self.game_config = game_config
 
+        # Cores e fontes (como você já tinha)
         self.bg_color = COLORS["background"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
@@ -154,18 +155,32 @@ class QuizScreen:
         self.option_font = pygame.font.SysFont('Arial', 18)
         self.info_font = pygame.font.SysFont('Arial', 16)
         self.small_font = pygame.font.SysFont('Arial', 14)
+        
+        # Atributos de estado do jogo (como você já tinha)
+        self.waiting_for_next = False
+        self.wait_timer = 0
+        self.game_over = False
+        self.accumulated_money = 0
+        self.saved_money = 0
+        self.answer_correct = None # Inicialize como None ou um valor booleano padrão
+        self.show_result = False
+        self.show_confirmation = False
+        self.show_help_options = False
+
 
         subject = self.game_config["subject"]
         grade = self.game_config["grade"]
         difficulty = self.game_config["difficulty"]
 
         id_materia = get_id_materia_by_nome(subject)
+        id_serie = get_id_serie_by_nome(grade)
+        id_dificuldade = get_id_dificuldade_by_nome(difficulty)
 
         if id_materia:
             self.questions = get_questions_from_db(
                 id_materia=id_materia,
-                serie=grade,
-                dificuldade=difficulty
+                id_serie=grade,
+                id_dificuldade=difficulty
             )
         else:
             print("❌ Erro: Matéria não encontrada no banco.")
@@ -176,6 +191,10 @@ class QuizScreen:
         self.show_hint = False
         self.selected_option = None
         self.correct_answer = None
+        print("DEBUG: QuizScreen __init__ - ANTES de chamar self.setup_ui()")
+        self.setup_ui()
+        print("DEBUG: QuizScreen __init__ - DEPOIS de chamar self.setup_ui()")
+        print("DEBUG: QuizScreen __init__ - FIM")
 
     def handle_events(self):
         for event in pygame.event.get():
