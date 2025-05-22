@@ -9,25 +9,6 @@ from pygame.locals import *
 try:
     import config
     COLORS = config.COLORS
-    # Tentar obter SUBJECTS e GRADE_LEVELS, ou usar valores padrão
-    try:
-        SUBJECTS = config.SUBJECTS
-    except (AttributeError, UnicodeDecodeError):
-        print("Usando matérias padrão")
-        SUBJECTS = ["Matematica", "Fisica", "Biologia", "Quimica", "Historia", "Geografia", "Portugues"]
-    
-    try:
-        GRADE_LEVELS = config.GRADE_LEVELS
-    except (AttributeError, UnicodeDecodeError):
-        print("Usando séries padrão")
-        GRADE_LEVELS = ["1 Ano", "2 Ano", "3 Ano"]
-    
-    try:
-        DIFFICULTY_LEVELS = config.DIFFICULTY_LEVELS
-    except (AttributeError, UnicodeDecodeError):
-        print("Usando níveis de dificuldade padrão")
-        DIFFICULTY_LEVELS = ["Facil", "Medio", "Dificil"]
-    
 except ImportError:
     print("Arquivo config.py não encontrado. Usando configurações padrão.")
     COLORS = {
@@ -40,86 +21,157 @@ except ImportError:
         "warning": (232, 181, 12),
         "error": (232, 77, 77)
     }
-    SUBJECTS = ["Matematica", "Fisica", "Biologia", "Quimica", "Historia", "Geografia", "Portugues"]
-    GRADE_LEVELS = ["1 Ano", "2 Ano", "3 Ano"]
-    DIFFICULTY_LEVELS = ["Facil", "Medio", "Dificil"]
 
-# Classes de componentes da UI
-class NeumorphicPanel:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
-        self.border_radius = border_radius
-    
-    def draw(self, surface):
-        # Desenhar retângulo principal com bordas arredondadas
-        pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
+# Tentar importar componentes neumórficos do módulo de utilitários
+try:
+    from utils.ui_elements import NeumorphicPanel, NeumorphicButton, NeumorphicInput
+except ImportError:
+    # Definições das classes UI se não conseguir importar
+    class NeumorphicPanel:
+        def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
+            self.rect = pygame.Rect(x, y, width, height)
+            self.bg_color = bg_color
+            self.light_shadow = light_shadow
+            self.dark_shadow = dark_shadow
+            self.border_radius = border_radius
         
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+        def draw(self, surface):
+            # Desenhar retângulo principal com bordas arredondadas
+            pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
+            
+            # Desenhar sombra clara (superior esquerda)
+            shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
+            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
+            
+            # Desenhar sombra escura (inferior direita)
+            shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
+            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
 
-class NeumorphicButton:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 accent_color, text, font, is_toggle=False, is_active=False):
-        self.rect = pygame.Rect(x, y, width, height)
-        self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
-        self.accent_color = accent_color
-        self.text = text
-        self.font = font
-        self.is_toggle = is_toggle
-        self.is_active = is_active
-        self.pressed = False
+    class NeumorphicButton:
+        def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
+                    accent_color, text, font, is_toggle=False, is_active=False):
+            self.rect = pygame.Rect(x, y, width, height)
+            self.bg_color = bg_color
+            self.light_shadow = light_shadow
+            self.dark_shadow = dark_shadow
+            self.accent_color = accent_color
+            self.text = text
+            self.font = font
+            self.is_toggle = is_toggle
+            self.is_active = is_active
+            self.pressed = False
+            
+            # Preparar superfície de texto
+            self.text_surf = font.render(text, True, (50, 50, 50))
+            self.text_rect = self.text_surf.get_rect(center=self.rect.center)
         
-        # Preparar superfície de texto
-        self.text_surf = font.render(text, True, (50, 50, 50))
-        self.text_rect = self.text_surf.get_rect(center=self.rect.center)
-    
-    def is_clicked(self, pos):
-        return self.rect.collidepoint(pos)
-    
-    def draw(self, surface):
-        # Determinar se o botão está pressionado (visualmente)
-        is_pressed = self.pressed or (self.is_toggle and self.is_active)
+        def is_clicked(self, pos):
+            return self.rect.collidepoint(pos)
         
-        if is_pressed:
-            # Estado pressionado: inverter sombras e aplicar cor de destaque
+        def draw(self, surface):
+            # Determinar se o botão está pressionado (visualmente)
+            is_pressed = self.pressed or (self.is_toggle and self.is_active)
+            
+            if is_pressed:
+                # Estado pressionado: inverter sombras e aplicar cor de destaque
+                pygame.draw.rect(surface, self.bg_color, 
+                              pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
+                              border_radius=10)
+                
+                # Borda com cor de destaque
+                pygame.draw.rect(surface, self.accent_color, 
+                              self.rect, border_radius=10, width=2)
+                
+                # Deslocar o texto ligeiramente
+                text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
+                surface.blit(self.text_surf, text_rect)
+            else:
+                # Estado normal: efeito neumórfico
+                pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
+                
+                # Desenhar sombras
+                shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
+                pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
+                
+                shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
+                pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
+                
+                # Desenhar texto
+                surface.blit(self.text_surf, self.text_rect)
+
+    class NeumorphicInput:
+        def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
+                    placeholder, font, is_password=False):
+            self.rect = pygame.Rect(x, y, width, height)
+            self.bg_color = bg_color
+            self.light_shadow = light_shadow
+            self.dark_shadow = dark_shadow
+            self.placeholder = placeholder
+            self.font = font
+            self.is_password = is_password
+            self.text = ""
+            self.active = False
+            
+            # Cursor piscante
+            self.cursor_visible = True
+            self.cursor_timer = 0
+        
+        def is_clicked(self, pos):
+            return self.rect.collidepoint(pos)
+        
+        def draw(self, surface):
+            # Desenhar o fundo do input (invertido do normal para parecer afundado)
             pygame.draw.rect(surface, self.bg_color, 
                            pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
                            border_radius=10)
             
-            # Borda com cor de destaque
-            pygame.draw.rect(surface, self.accent_color, 
-                           self.rect, border_radius=10, width=2)
-            
-            # Deslocar o texto ligeiramente
-            text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
-            surface.blit(self.text_surf, text_rect)
-        else:
-            # Estado normal: efeito neumórfico
-            pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
+            # Desenhar sombras internas (invertidas)
+            shadow_rect_dark = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
             pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
             
-            # Desenhar texto
-            surface.blit(self.text_surf, self.text_rect)
+            shadow_rect_light = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
+            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
+            
+            # Desenhar linha de destaque se ativo
+            if self.active:
+                pygame.draw.line(surface, (120, 120, 255), 
+                               (self.rect.x + 15, self.rect.y + self.rect.height - 8),
+                               (self.rect.x + self.rect.width - 15, self.rect.y + self.rect.height - 8),
+                               2)
+            
+            # Exibir texto ou placeholder
+            if self.text:
+                if self.is_password:
+                    displayed_text = "•" * len(self.text)
+                else:
+                    displayed_text = self.text
+                
+                text_surface = self.font.render(displayed_text, True, (50, 50, 50))
+            else:
+                text_surface = self.font.render(self.placeholder, True, (150, 150, 150))
+            
+            text_rect = text_surface.get_rect(midleft=(self.rect.x + 15, self.rect.y + self.rect.height // 2))
+            surface.blit(text_surface, text_rect)
+            
+            # Desenhar cursor piscante se ativo
+            if self.active:
+                # Atualizar timer do cursor
+                self.cursor_timer += 1
+                if self.cursor_timer >= 30:  # piscar a cada 30 frames
+                    self.cursor_visible = not self.cursor_visible
+                    self.cursor_timer = 0
+                
+                if self.cursor_visible:
+                    cursor_x = text_rect.right + 2 if self.text else self.rect.x + 15
+                    pygame.draw.line(surface, (50, 50, 50),
+                                  (cursor_x, self.rect.y + 15),
+                                  (cursor_x, self.rect.y + self.rect.height - 15),
+                                  2)
+
 
 class QuestionListItem:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 question_id, question_text, subject, grade, difficulty, font, is_selected=False):
+                 question_id, question_text, subject, difficulty, font, is_selected=False):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
         self.light_shadow = light_shadow
@@ -127,7 +179,6 @@ class QuestionListItem:
         self.question_id = question_id
         self.question_text = question_text
         self.subject = subject
-        self.grade = grade
         self.difficulty = difficulty
         self.font = font
         self.small_font = pygame.font.SysFont('Arial', font.get_height() - 4)
@@ -154,15 +205,6 @@ class QuestionListItem:
             pygame.draw.rect(surface, COLORS.get("accent", (106, 130, 251)), 
                            self.rect, border_radius=10, width=2)
         
-        # Mostrar o texto da questão (truncado se for muito longo)
-        max_text_width = self.rect.width - 40
-        question_text = self.question_text
-        if self.font.size(question_text)[0] > max_text_width:
-            # Truncar o texto e adicionar "..."
-            while self.font.size(question_text + "...")[0] > max_text_width and len(question_text) > 0:
-                question_text = question_text[:-1]
-            question_text += "..."
-        
         # Desenhar textos
         margin = 15
         
@@ -171,16 +213,66 @@ class QuestionListItem:
         id_rect = id_surf.get_rect(topleft=(self.rect.x + margin, self.rect.y + 10))
         surface.blit(id_surf, id_rect)
         
-        # Texto da questão (principal)
-        question_surf = self.font.render(question_text, True, (50, 50, 50))
-        question_rect = question_surf.get_rect(topleft=(self.rect.x + margin, self.rect.y + 35))
-        surface.blit(question_surf, question_rect)
+        # Matéria e dificuldade (canto superior direito)
+        diff_color = {
+            "fácil": (75, 181, 67),
+            "média": (232, 181, 12),
+            "difícil": (232, 77, 77)
+        }.get(self.difficulty.lower(), (100, 100, 100))
         
-        # Informações adicionais (matéria, série, dificuldade)
-        info_text = f"{self.subject} | {self.grade} | {self.difficulty}"
-        info_surf = self.small_font.render(info_text, True, (100, 100, 100))
-        info_rect = info_surf.get_rect(bottomleft=(self.rect.x + margin, self.rect.y + self.rect.height - 10))
-        surface.blit(info_surf, info_rect)
+        subject_diff_surf = self.small_font.render(f"{self.subject} | ", True, (100, 100, 100))
+        diff_surf = self.small_font.render(f"{self.difficulty}", True, diff_color)
+        
+        # Calcular posição para o texto de matéria + dificuldade
+        subject_diff_rect = subject_diff_surf.get_rect(topright=(self.rect.right - margin - diff_surf.get_width(), self.rect.y + 10))
+        diff_rect = diff_surf.get_rect(topright=(self.rect.right - margin, self.rect.y + 10))
+        
+        surface.blit(subject_diff_surf, subject_diff_rect)
+        surface.blit(diff_surf, diff_rect)
+        
+        # Texto da questão (principal, limitado a 2 linhas)
+        lines = self._wrap_text(self.question_text, self.font, self.rect.width - margin*2)
+        lines = lines[:2]  # Limitar a 2 linhas
+        
+        for i, line in enumerate(lines):
+            text_surf = self.font.render(line, True, (50, 50, 50))
+            text_rect = text_surf.get_rect(topleft=(self.rect.x + margin, self.rect.y + 35 + i*self.font.get_height()))
+            surface.blit(text_surf, text_rect)
+        
+        # Se o texto foi truncado, adicionar "..."
+        if len(self._wrap_text(self.question_text, self.font, self.rect.width - margin*2)) > 2:
+            ellipsis = self.font.render("...", True, (50, 50, 50))
+            surface.blit(ellipsis, (self.rect.x + margin, self.rect.y + 35 + 2*self.font.get_height()))
+    
+    def _wrap_text(self, text, font, max_width):
+        """Quebra o texto em múltiplas linhas para caber na largura definida"""
+        words = text.split(' ')
+        lines = []
+        current_line = []
+        
+        for word in words:
+            # Testa se adicionar a próxima palavra excederia a largura máxima
+            test_line = ' '.join(current_line + [word])
+            test_width, _ = font.size(test_line)
+            
+            if test_width <= max_width:
+                current_line.append(word)
+            else:
+                # Se a linha atual não estiver vazia, adiciona à lista de linhas
+                if current_line:
+                    lines.append(' '.join(current_line))
+                    current_line = [word]
+                else:
+                    # Se a palavra for maior que a largura máxima, adiciona assim mesmo
+                    lines.append(word)
+                    current_line = []
+        
+        # Adiciona a última linha
+        if current_line:
+            lines.append(' '.join(current_line))
+            
+        return lines
+
 
 class QuestionEditScreen:
     def __init__(self, screen, user_data):
@@ -188,6 +280,7 @@ class QuestionEditScreen:
         self.running = True
         self.width, self.height = screen.get_size()
         self.user_data = user_data  # Contém user_type (teacher) e username
+        self.center_x = self.width // 2
         
         # Cores do design neumorfista
         self.bg_color = COLORS["background"]
@@ -201,305 +294,482 @@ class QuestionEditScreen:
         self.text_font = pygame.font.SysFont('Arial', 18)
         self.small_font = pygame.font.SysFont('Arial', 14)
         
-        # Estado da seleção
-        self.selected_subject = None
-        self.selected_grade = None
-        self.selected_difficulty = None
-        self.selected_question = None
-        self.filter_active = False
+        # Matérias e dificuldades disponíveis
+        self.subjects = ["Matemática", "Física", "Biologia", "Química", "História", "Geografia", "Português"]
+        self.difficulties = ["fácil", "média", "difícil"]
         
-        # Estado do filtro
-        self.filter_message = None
-        self.filter_timer = 0
+        # Estado da tela
+        self.selected_question = None
+        self.show_edit_form = False
+        self.show_options_form = False
+        self.current_filter = {"subject": None, "difficulty": None}
+        
+        # Estado do formulário de edição
+        self.question_text_input = None
+        self.hint_input = None
+        self.selected_subject = None
+        self.selected_difficulty = None
+        self.option_inputs = []
+        self.correct_option = None
+        self.subject_buttons = []
+        self.difficulty_buttons = []
+        
+        # Estado de mensagem
+        self.message = None
+        self.message_timer = 0
         
         # Para rolagem na lista
         self.scroll_offset = 0
-        self.max_items_visible = 5  # Número de questões visíveis por vez
+        self.max_items_visible = 4  # Número de questões visíveis por vez
         
         # Criar elementos de UI
         self.setup_ui()
         
-        # Carregar questões (mockup para testes)
+        # Carregar questões
         self.questions = self.load_questions()
-        self.filtered_questions = self.questions
+        self.filtered_questions = self.questions.copy()
         
     def setup_ui(self):
-        center_x = self.width // 2
-        
         # Painel principal
         self.main_panel = NeumorphicPanel(
-            center_x - 350, 20, 
+            self.center_x - 350, 20, 
             700, 560, 
             self.bg_color, self.light_shadow, self.dark_shadow
         )
         
         # Painel de filtros
         self.filter_panel = NeumorphicPanel(
-            center_x - 330, 70, 
-            660, 100, 
+            self.center_x - 330, 70, 
+            660, 60, 
             self.bg_color, self.light_shadow, self.dark_shadow,
             border_radius=15
         )
         
-        # Botões para matérias (filtro)
-        self.subject_buttons = []
-        btn_width = 90
-        btn_height = 30
-        btn_x_start = center_x - 300
-        btn_y = 85
-        
-        for i, subject in enumerate(SUBJECTS[:7]):  # Limitamos a 7 matérias para caber
-            btn_x = btn_x_start + i * (btn_width + 10)
-            button = NeumorphicButton(
-                btn_x, btn_y,
-                btn_width, btn_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, subject, self.small_font,
-                is_toggle=True, is_active=False
-            )
-            self.subject_buttons.append(button)
-        
-        # Botões para séries (filtro)
-        self.grade_buttons = []
-        btn_width = 80
-        btn_x_start = center_x - 150
-        btn_y = 125
-        
-        for i, grade in enumerate(GRADE_LEVELS):
-            btn_x = btn_x_start + i * (btn_width + 10)
-            button = NeumorphicButton(
-                btn_x, btn_y,
-                btn_width, btn_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, grade, self.small_font,
-                is_toggle=True, is_active=False
-            )
-            self.grade_buttons.append(button)
-        
-        # Botões para dificuldade (filtro)
-        self.difficulty_buttons = []
-        btn_x_start = center_x + 40
-        
-        for i, difficulty in enumerate(DIFFICULTY_LEVELS):
-            btn_x = btn_x_start + i * (btn_width + 10)
-            button = NeumorphicButton(
-                btn_x, btn_y,
-                btn_width, btn_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, difficulty, self.small_font,
-                is_toggle=True, is_active=False
-            )
-            self.difficulty_buttons.append(button)
-        
-        # Botão para aplicar filtros
-        self.apply_filter_button = NeumorphicButton(
-            center_x + 200, 105,
-            100, 30,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            COLORS.get("success", (75, 181, 67)),
-            "FILTRAR", self.small_font
-        )
-        
-        # Botão para limpar filtros
-        self.clear_filter_button = NeumorphicButton(
-            center_x + 200, 145,
-            100, 30,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            COLORS.get("warning", (232, 181, 12)),
-            "LIMPAR", self.small_font
-        )
-        
         # Painel da lista de questões
         self.list_panel = NeumorphicPanel(
-            center_x - 330, 180, 
-            660, 330, 
+            self.center_x - 330, 140, 
+            660, 220, 
             self.bg_color, self.light_shadow, self.dark_shadow,
             border_radius=15
         )
         
         # Botões de rolagem para a lista
         self.scroll_up_button = NeumorphicButton(
-            center_x + 290, 240,
+            self.center_x + 290, 165,
             35, 35,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "▲", self.text_font
         )
         
         self.scroll_down_button = NeumorphicButton(
-            center_x + 290, 410,
+            self.center_x + 290, 300,
             35, 35,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "▼", self.text_font
         )
         
+        # Filtro por matéria
+        self.filter_subject_buttons = []
+        button_width = 80
+        button_spacing = 10
+        start_x = self.center_x - 320
+        
+        for i, subject in enumerate(self.subjects):
+            if i > 0 and i % 4 == 0:  # Nova linha a cada 4 botões
+                start_x = self.center_x - 320
+            
+            button = NeumorphicButton(
+                start_x, 80,
+                button_width, 30,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+                self.accent_color, subject[:5], self.small_font,
+                is_toggle=True, is_active=False
+            )
+            self.filter_subject_buttons.append(button)
+            start_x += button_width + button_spacing
+        
+        # Filtro por dificuldade
+        self.filter_difficulty_buttons = []
+        button_colors = {
+            "fácil": (75, 181, 67),  # Verde
+            "média": (232, 181, 12),  # Amarelo
+            "difícil": (232, 77, 77)  # Vermelho
+        }
+        
+        button_width = 80
+        start_x = self.center_x + 90
+        
+        for i, difficulty in enumerate(self.difficulties):
+            button = NeumorphicButton(
+                start_x, 80,
+                button_width, 30,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+                button_colors[difficulty], difficulty, self.small_font,
+                is_toggle=True, is_active=False
+            )
+            self.filter_difficulty_buttons.append(button)
+            start_x += button_width + button_spacing
+        
+        # Botão para limpar filtros
+        self.clear_filter_button = NeumorphicButton(
+            self.center_x + 250, 80,
+            35, 30,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            (150, 150, 150), "✕", self.small_font
+        )
+        
+        # Painel do formulário de edição (inicialmente oculto)
+        self.form_panel = NeumorphicPanel(
+            self.center_x - 330, 370, 
+            660, 150, 
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            border_radius=15
+        )
+        
         # Botão para editar a questão selecionada
         self.edit_button = NeumorphicButton(
-            center_x - 100, 520,
-            200, 40,
+            self.center_x - 75, 530,
+            150, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "EDITAR QUESTÃO", self.text_font
+            self.accent_color, "EDITAR", self.text_font
         )
         
         # Botão para voltar ao menu
         self.back_button = NeumorphicButton(
-            center_x - 320, 520,
-            180, 40,
+            self.center_x - 250, 530,
+            150, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de voltar
             "VOLTAR", self.text_font
         )
         
-    def load_questions(self):
-        # Função mockup para carregar questões do banco
-        # No código real, faria uma consulta SQL
+        # Botão para salvar alterações (inicialmente oculto)
+        self.save_button = NeumorphicButton(
+            self.center_x + 100, 530,
+            150, 40,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            COLORS.get("success", (75, 181, 67)),  # Verde para salvar
+            "SALVAR", self.text_font
+        )
         
-        mock_questions = [
+    def create_edit_form(self):
+        """Criar formulário de edição para a questão selecionada"""
+        # Campo para texto da questão
+        self.question_text_input = NeumorphicInput(
+            self.center_x - 320, 390,
+            640, 60,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            "Texto da Questão", self.text_font
+        )
+        self.question_text_input.text = self.selected_question["text"]
+        
+        # Campo para dica
+        self.hint_input = NeumorphicInput(
+            self.center_x - 320, 470,
+            300, 40,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            "Dica para a questão", self.text_font
+        )
+        self.hint_input.text = self.selected_question["hint"]
+        
+        # Botões para matérias
+        self.subject_buttons = []
+        button_width = 80  # Reduzido para caber melhor
+        button_height = 30
+        btn_x_start = self.center_x + 20
+        btn_y = 470
+        
+        for i, subject in enumerate(self.subjects):
+            if i > 0 and i % 3 == 0:  # 3 botões por linha
+                btn_y += button_height + 5
+                btn_x_start = self.center_x + 20
+            
+            button = NeumorphicButton(
+                btn_x_start, btn_y,
+                button_width, button_height,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+                self.accent_color, subject[:3], self.small_font,  # Mostrar apenas 3 caracteres
+                is_toggle=True, is_active=(subject == self.selected_question["subject"])
+            )
+            self.subject_buttons.append(button)
+            btn_x_start += button_width + 5
+            
+            if subject == self.selected_question["subject"]:
+                self.selected_subject = subject
+        
+        # Botão para editar opções
+        self.edit_options_button = NeumorphicButton(
+            self.center_x - 100, self.hint_input.rect.y + 50,
+            200, 40,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.accent_color, "EDITAR OPÇÕES", self.text_font
+        )
+    
+    def create_options_form(self):
+        """Criar formulário para edição de opções da questão"""
+        # Painel que ocupa toda a tela
+        self.option_panel = NeumorphicPanel(
+            20, 20, 
+            self.width - 40, self.height - 40, 
+            self.bg_color, self.light_shadow, self.dark_shadow
+        )
+        
+        self.option_inputs = []
+        option_height = 60
+        option_spacing = 20
+        option_letters = ["A", "B", "C", "D"]
+        
+        for i, option in enumerate(self.selected_question["options"]):
+            option_input = NeumorphicInput(
+                self.center_x - 300, 100 + i * (option_height + option_spacing),
+                600, option_height,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+                f"Opção {option_letters[i]}", self.text_font
+            )
+            option_input.text = option
+            self.option_inputs.append(option_input)
+        
+        # Botões para selecionar alternativa correta
+        self.correct_option_buttons = []
+        
+        for i in range(4):
+            button = NeumorphicButton(
+                self.center_x - 350, 100 + i * (option_height + option_spacing),
+                40, 40,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+                COLORS.get("success", (75, 181, 67)), option_letters[i], self.text_font,
+                is_toggle=True, is_active=(i == self.selected_question["correct_option"])
+            )
+            self.correct_option_buttons.append(button)
+            
+            if i == self.selected_question["correct_option"]:
+                self.correct_option = i
+        last_option_bottom = 100 + 3 * (option_height + option_spacing) + option_height + 20
+        
+        # Botões para dificuldade
+        self.difficulty_buttons = []
+        button_colors = {
+            "fácil": (75, 181, 67),
+            "média": (232, 181, 12),
+            "difícil": (232, 77, 77)
+        }
+        
+        btn_width = 90
+        btn_spacing = 10
+        btn_x_start = self.center_x - 150
+        btn_y = last_option_bottom
+        
+        for i, difficulty in enumerate(self.difficulties):
+            button = NeumorphicButton(
+                btn_x_start + i * (btn_width + btn_spacing), btn_y,
+                btn_width, 40,
+                self.bg_color, self.light_shadow, self.dark_shadow,
+                button_colors[difficulty], difficulty, self.text_font,
+                is_toggle=True, is_active=(difficulty == self.selected_question["difficulty"])
+            )
+            self.difficulty_buttons.append(button)
+            
+            if difficulty == self.selected_question["difficulty"]:
+                self.selected_difficulty = difficulty
+        nav_btn_y = btn_y + 60
+        # Botão para voltar à tela principal SEM salvar
+        self.back_to_main_button = NeumorphicButton(
+            self.center_x - 175, btn_y + 60,
+            150, 40,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            (232, 77, 77), "VOLTAR", self.text_font
+        )
+        
+        # Botão para salvar e voltar à tela principal
+        self.done_options_button = NeumorphicButton(
+            self.center_x + 25, btn_y + 60,
+            150, 40,
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            COLORS.get("success", (75, 181, 67)), "SALVAR", self.text_font
+        )
+    
+    def load_questions(self):
+        """Função mockup para carregar questões do banco"""
+        # No código real, faria uma consulta ao banco de dados
+        questions = [
             {
                 "id": 1,
                 "text": "Qual é o resultado de 7 x 8?",
-                "subject": "Matematica",
-                "grade": "1 Ano",
-                "difficulty": "Facil",
+                "hint": "Multiplique 7 por 8",
+                "subject": "Matemática",
+                "difficulty": "fácil",
                 "options": ["54", "56", "64", "72"],
-                "correct_option": 1,
-                "explanation": "Multiplicação simples: 7 × 8 = 56"
+                "correct_option": 1
             },
             {
                 "id": 2,
-                "text": "Qual é a capital da França?",
-                "subject": "Geografia",
-                "grade": "2 Ano",
-                "difficulty": "Facil",
-                "options": ["Londres", "Paris", "Roma", "Madri"],
-                "correct_option": 1,
-                "explanation": "Paris é a capital da França."
+                "text": "Qual é a unidade de medida da força no Sistema Internacional (SI)?",
+                "hint": "Lembre-se da Segunda Lei de Newton",
+                "subject": "Física",
+                "difficulty": "fácil",
+                "options": ["Watt", "Joule", "Newton", "Pascal"],
+                "correct_option": 2
             },
             {
                 "id": 3,
-                "text": "Qual é a fórmula química da água?",
-                "subject": "Quimica",
-                "grade": "1 Ano",
-                "difficulty": "Facil",
-                "options": ["CO2", "H2O", "O2", "NaCl"],
-                "correct_option": 1,
-                "explanation": "A água é formada por duas moléculas de hidrogênio e uma de oxigênio, H2O."
+                "text": "Qual é a área de um círculo com raio 5cm? (Use π = 3.14)",
+                "hint": "Use a fórmula A = πr²",
+                "subject": "Matemática",
+                "difficulty": "média",
+                "options": ["25π cm²", "10π cm²", "15π cm²", "20π cm²"],
+                "correct_option": 0
             },
             {
                 "id": 4,
-                "text": "Qual é a área de um círculo com raio 5cm? (Use π = 3.14)",
-                "subject": "Matematica",
-                "grade": "2 Ano",
-                "difficulty": "Medio",
-                "options": ["25π cm²", "10π cm²", "15π cm²", "20π cm²"],
-                "correct_option": 0,
-                "explanation": "A área de um círculo é A = π × r², assim A = π × 5² = 25π cm²"
+                "text": "Um objeto é lançado verticalmente para cima. No ponto mais alto da trajetória:",
+                "hint": "Pense sobre a velocidade e aceleração no ponto mais alto",
+                "subject": "Física",
+                "difficulty": "média",
+                "options": ["A velocidade e a aceleração são nulas", "A velocidade é nula e a aceleração é g", "A velocidade é g e a aceleração é nula", "A velocidade e a aceleração são iguais a g"],
+                "correct_option": 1
             },
             {
                 "id": 5,
-                "text": "Quem escreveu 'Dom Casmurro'?",
-                "subject": "Portugues",
-                "grade": "3 Ano",
-                "difficulty": "Medio",
-                "options": ["José de Alencar", "Machado de Assis", "Clarice Lispector", "Carlos Drummond de Andrade"],
-                "correct_option": 1,
-                "explanation": "Dom Casmurro é um romance escrito por Machado de Assis, publicado em 1899."
+                "text": "Qual é a solução da equação 2x² - 5x - 3 = 0?",
+                "hint": "Use a fórmula de Bhaskara",
+                "subject": "Matemática",
+                "difficulty": "difícil",
+                "options": ["x = 3 ou x = -0.5", "x = 2.5 ou x = -0.5", "x = 3 ou x = -1", "x = 2 ou x = -1.5"],
+                "correct_option": 0
             },
             {
                 "id": 6,
-                "text": "Qual é a solução da equação 2x² - 5x - 3 = 0?",
-                "subject": "Matematica",
-                "grade": "3 Ano",
-                "difficulty": "Dificil",
-                "options": ["x = 3 ou x = -0.5", "x = 2.5 ou x = -0.5", "x = 3 ou x = -1", "x = 2 ou x = -1.5"],
-                "correct_option": 0,
-                "explanation": "Usando a fórmula de Bhaskara: x = (-b ± √(b² - 4ac))/2a, onde a=2, b=-5, c=-3"
+                "text": "Uma partícula se move em linha reta com velocidade constante. A força resultante sobre ela é:",
+                "hint": "Lembre-se da Primeira Lei de Newton",
+                "subject": "Física",
+                "difficulty": "média",
+                "options": ["Constante e diferente de zero", "Variável", "Nula", "Não há informações suficientes para responder"],
+                "correct_option": 2
             },
             {
                 "id": 7,
-                "text": "Um objeto é lançado verticalmente para cima. No ponto mais alto da trajetória:",
-                "subject": "Fisica",
-                "grade": "2 Ano",
-                "difficulty": "Medio",
-                "options": ["A velocidade e a aceleração são nulas", "A velocidade é nula e a aceleração é g", 
-                           "A velocidade é g e a aceleração é nula", "A velocidade e a aceleração são iguais a g"],
-                "correct_option": 1,
-                "explanation": "No ponto mais alto, a velocidade instantânea é zero, mas a aceleração da gravidade continua agindo."
+                "text": "Quais são as células responsáveis pela produção de anticorpos?",
+                "hint": "São células do sistema imunológico",
+                "subject": "Biologia",
+                "difficulty": "média",
+                "options": ["Linfócitos T", "Linfócitos B", "Macrófagos", "Neutrófilos"],
+                "correct_option": 1
             },
             {
                 "id": 8,
-                "text": "Quais são os principais tipos de RNA e suas funções?",
+                "text": "Qual é o principal produto da fotossíntese?",
+                "hint": "É uma molécula energética",
                 "subject": "Biologia",
-                "grade": "3 Ano",
-                "difficulty": "Dificil",
-                "options": ["mRNA, tRNA e rRNA - transcrição, tradução e estrutura ribossômica", 
-                           "DNA, RNA e proteínas - replicação, transcrição e tradução", 
-                           "Ribossomos, lisossomos e mitocôndrias - síntese, digestão e energia", 
-                           "Núcleo, citoplasma e membrana - controle, metabolismo e proteção"],
-                "correct_option": 0,
-                "explanation": "Os principais tipos de RNA são: mRNA (RNA mensageiro), tRNA (RNA transportador) e rRNA (RNA ribossômico)."
+                "difficulty": "fácil",
+                "options": ["Oxigênio", "Água", "Glicose", "Dióxido de carbono"],
+                "correct_option": 2
             }
         ]
-        
-        return mock_questions
+        return questions
     
     def apply_filters(self):
-        # Filtrar as questões com base nas seleções
-        if not any([self.selected_subject, self.selected_grade, self.selected_difficulty]):
-            # Se nenhum filtro estiver selecionado, mostrar todas as questões
-            self.filtered_questions = self.questions
-            self.filter_message = "Mostrando todas as questões"
-            self.filter_timer = 120
-            self.filter_active = False
-            return
+        """Aplicar filtros à lista de questões"""
+        self.filtered_questions = []
         
-        # Aplicar filtros selecionados
-        filtered = self.questions
-        
-        if self.selected_subject:
-            filtered = [q for q in filtered if q["subject"] == self.selected_subject]
+        for question in self.questions:
+            # Verificar se atende aos filtros de matéria e dificuldade
+            subject_match = (self.current_filter["subject"] is None or 
+                            question["subject"] == self.current_filter["subject"])
             
-        if self.selected_grade:
-            filtered = [q for q in filtered if q["grade"] == self.selected_grade]
+            difficulty_match = (self.current_filter["difficulty"] is None or 
+                              question["difficulty"] == self.current_filter["difficulty"])
             
-        if self.selected_difficulty:
-            filtered = [q for q in filtered if q["difficulty"] == self.selected_difficulty]
+            if subject_match and difficulty_match:
+                self.filtered_questions.append(question)
         
-        self.filtered_questions = filtered
-        self.scroll_offset = 0  # Reset da rolagem
-        
-        # Preparar mensagem de feedback
-        if len(filtered) == 0:
-            self.filter_message = "Nenhuma questão encontrada com os filtros selecionados"
-        else:
-            self.filter_message = f"Encontradas {len(filtered)} questões"
-        
-        self.filter_timer = 120  # 2 segundos a 60 FPS
-        self.filter_active = True
-    
-    def clear_filters(self):
-        # Limpar todas as seleções de filtro
-        self.selected_subject = None
-        self.selected_grade = None
-        self.selected_difficulty = None
-        
-        # Resetar estado dos botões de toggle
-        for button in self.subject_buttons:
-            button.is_active = False
-            
-        for button in self.grade_buttons:
-            button.is_active = False
-            
-        for button in self.difficulty_buttons:
-            button.is_active = False
-        
-        # Mostrar todas as questões
-        self.filtered_questions = self.questions
+        # Resetar a posição de rolagem
         self.scroll_offset = 0
         
-        # Mostrar mensagem de feedback
-        self.filter_message = "Filtros removidos"
-        self.filter_timer = 120
-        self.filter_active = False
+        # Limpar a seleção atual
+        self.selected_question = None
+    
+    def validate_form(self):
+        """Verificar se todos os campos necessários estão preenchidos"""
+        # Verificar se o texto da questão foi preenchido
+        if not self.question_text_input.text.strip():
+            return False, "Digite o texto da questão"
+            
+        if self.show_options_form:
+            # Verificar se as opções estão preenchidas
+            for i, option_input in enumerate(self.option_inputs):
+                if not option_input.text.strip():
+                    return False, f"Digite o texto da opção {chr(65+i)}"
+            
+            # Verificar se a alternativa correta foi selecionada
+            if self.correct_option is None:
+                return False, "Selecione a alternativa correta"
+            
+            # Verificar se a dificuldade foi selecionada
+            if not self.selected_difficulty:
+                return False, "Selecione a dificuldade"
+        else:
+            # Verificar se a dica foi preenchida
+            if not self.hint_input.text.strip():
+                return False, "Digite a dica da questão"
+                
+            # Verificar se a matéria foi selecionada
+            if not self.selected_subject:
+                return False, "Selecione a matéria"
+        
+        return True, "Formulário válido"
+    
+    def save_edited_question(self):
+        """Salvar as alterações na questão"""
+        is_valid, message = self.validate_form()
+        if not is_valid:
+            self.message = message
+            self.message_timer = 180  # 3 segundos
+            return False
+        
+        # Preparar dados atualizados se estiver na tela de opções
+        if self.show_options_form:
+            options = [option_input.text.strip() for option_input in self.option_inputs]
+            
+            # Atualizar apenas os dados relevantes na questão atual
+            self.selected_question["options"] = options
+            self.selected_question["correct_option"] = self.correct_option
+            self.selected_question["difficulty"] = self.selected_difficulty
+        else:
+            # Atualizar dados da questão principal
+            self.selected_question["text"] = self.question_text_input.text.strip()
+            self.selected_question["hint"] = self.hint_input.text.strip()
+            self.selected_question["subject"] = self.selected_subject
+        
+        # Atualizar na lista local (simulação)
+        question_found = False
+        for i, q in enumerate(self.questions):
+            if q["id"] == self.selected_question["id"]:
+                self.questions[i] = self.selected_question
+                question_found = True
+                break
+        if not question_found:
+            self.message = "Erro: Questão não selecionada"
+            self.message_timer = 180
+            return False
+        # Aplicar os filtros novamente
+        saved_question_id = self.selected_question["id"]
+        self.apply_filters()
+        
+        # Destacar a questão editada na lista filtrada
+        self.selected_question = None
+        for i, q in enumerate(self.filtered_questions):
+            if q["id"] == saved_question_id:
+                self.selected_question = q
+                break
+        
+        # Simulação de atualização no banco de dados
+        print(f"Questão atualizada: {self.selected_question}")
+        
+        # Mostrar mensagem de sucesso
+        self.message = "Questão atualizada com sucesso!"
+        self.message_timer = 120  # 2 segundos
+        
+        return True
     
     def handle_events(self):
         for event in pygame.event.get():
@@ -510,88 +780,178 @@ class QuestionEditScreen:
             if event.type == MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 
-                # Verificar cliques nos botões de filtro de matéria
-                for i, button in enumerate(self.subject_buttons):
-                    if button.is_clicked(mouse_pos):
-                        # Toggle do botão
-                        button.is_active = not button.is_active
-                        
-                        # Atualizar seleção
-                        self.selected_subject = SUBJECTS[i] if button.is_active else None
-                        
-                        # Desativar outros botões de matéria se este foi ativado
-                        if button.is_active:
-                            for j, other_button in enumerate(self.subject_buttons):
-                                if j != i:
-                                    other_button.is_active = False
-                        
-                        break
-                
-                # Verificar cliques nos botões de filtro de série
-                for i, button in enumerate(self.grade_buttons):
-                    if button.is_clicked(mouse_pos):
-                        # Toggle do botão
-                        button.is_active = not button.is_active
-                        
-                        # Atualizar seleção
-                        self.selected_grade = GRADE_LEVELS[i] if button.is_active else None
-                        
-                        # Desativar outros botões de série se este foi ativado
-                        if button.is_active:
-                            for j, other_button in enumerate(self.grade_buttons):
-                                if j != i:
-                                    other_button.is_active = False
-                        
-                        break
-                
-                # Verificar cliques nos botões de filtro de dificuldade
-                for i, button in enumerate(self.difficulty_buttons):
-                    if button.is_clicked(mouse_pos):
-                        # Toggle do botão
-                        button.is_active = not button.is_active
-                        
-                        # Atualizar seleção
-                        self.selected_difficulty = DIFFICULTY_LEVELS[i] if button.is_active else None
-                        
-                        # Desativar outros botões de dificuldade se este foi ativado
-                        if button.is_active:
-                            for j, other_button in enumerate(self.difficulty_buttons):
-                                if j != i:
-                                    other_button.is_active = False
-                        
-                        break
-                
-                # Verificar clique no botão APLICAR FILTRO
-                if self.apply_filter_button.is_clicked(mouse_pos):
-                    self.apply_filter_button.pressed = True
-                    self.apply_filters()
-                
-                # Verificar clique no botão LIMPAR FILTRO
-                if self.clear_filter_button.is_clicked(mouse_pos):
-                    self.clear_filter_button.pressed = True
-                    self.clear_filters()
-                
-                # Verificar cliques na lista de questões
-                start_y = self.list_panel.rect.y + 20
-                item_height = 100
-                item_spacing = 10
-                
-                visible_items = self.filtered_questions[self.scroll_offset:self.scroll_offset + self.max_items_visible]
-                for i, question in enumerate(visible_items):
-                    item_y = start_y + i * (item_height + item_spacing)
-                    item_rect = pygame.Rect(
-                        self.list_panel.rect.x + 20,
-                        item_y,
-                        self.list_panel.rect.width - 80,
-                        item_height
-                    )
+                # Se estiver na tela de edição de opções
+                if self.show_options_form:
+                    # Verificar cliques nos campos de entrada de opções
+                    for i, option_input in enumerate(self.option_inputs):
+                        if option_input.is_clicked(mouse_pos):
+                            # Ativar este campo e desativar os outros
+                            for j, other_input in enumerate(self.option_inputs):
+                                other_input.active = (j == i)
                     
-                    if item_rect.collidepoint(mouse_pos):
-                        # Selecionar esta questão
-                        self.selected_question = question
-                        break
+                    # Verificar cliques nos botões de alternativa correta
+                    for i, button in enumerate(self.correct_option_buttons):
+                        if button.is_clicked(mouse_pos):
+                            # Desativar todos os outros botões
+                            for j, other_button in enumerate(self.correct_option_buttons):
+                                other_button.is_active = (j == i)
+                            
+                            self.correct_option = i
+                            break
+                    
+                    # Verificar cliques nos botões de dificuldade
+                    for i, button in enumerate(self.difficulty_buttons):
+                        if button.is_clicked(mouse_pos):
+                            # Desativar todos os outros botões
+                            for j, other_button in enumerate(self.difficulty_buttons):
+                                other_button.is_active = (j == i)
+                            
+                            self.selected_difficulty = self.difficulties[i]
+                            break
+                    
+                    # Verificar clique no botão VOLTAR à tela principal
+                    if self.back_to_main_button.is_clicked(mouse_pos):
+                        self.back_to_main_button.pressed = True
+                        self.show_options_form = False
+                    
+                    # Verificar clique no botão SALVAR
+                    if self.done_options_button.is_clicked(mouse_pos):
+                        self.done_options_button.pressed = True
+                        if self.save_edited_question():
+                            # Voltar para a tela de edição principal
+                            self.show_options_form = False
+                            self.show_edit_form = True  # Garantir que continuamos na tela de edição
+                
+                # Se estiver no formulário de edição principal
+                elif self.show_edit_form:
+                    # Verificar cliques nos campos de entrada
+                    if self.question_text_input.is_clicked(mouse_pos):
+                        self.question_text_input.active = True
+                        self.hint_input.active = False
+                    elif self.hint_input.is_clicked(mouse_pos):
+                        self.question_text_input.active = False
+                        self.hint_input.active = True
+                    else:
+                        self.question_text_input.active = False
+                        self.hint_input.active = False
+                    
+                    # Verificar cliques nos botões de matéria
+                    for i, button in enumerate(self.subject_buttons):
+                        if button.is_clicked(mouse_pos):
+                            # Desativar todos os outros botões de matéria
+                            for j, other_button in enumerate(self.subject_buttons):
+                                other_button.is_active = (j == i)
+                            
+                            self.selected_subject = self.subjects[i]
+                            break
+                    
+                    # Verificar clique no botão EDITAR OPÇÕES
+                    if self.edit_options_button.is_clicked(mouse_pos):
+                        self.edit_options_button.pressed = True
+                        if self.validate_form()[0]:  # Validar o formulário principal
+                            # Salvar os dados do formulário principal
+                            self.selected_question["text"] = self.question_text_input.text.strip()
+                            self.selected_question["hint"] = self.hint_input.text.strip()
+                            self.selected_question["subject"] = self.selected_subject
+                            
+                            # Abrir tela de edição de opções
+                            self.show_options_form = True
+                            self.create_options_form()
+                        else:
+                            self.message = "Preencha todos os campos antes de editar as opções"
+                            self.message_timer = 180
+                    
+                    # Verificar clique no botão VOLTAR (sem salvar)
+                    if self.back_button.is_clicked(mouse_pos):
+                        self.back_button.pressed = True
+                        # Voltar para o estado de seleção
+                        self.show_edit_form = False
+                    
+                    # Verificar clique no botão SALVAR
+                    if self.save_button.is_clicked(mouse_pos):
+                        self.save_button.pressed = True
+                        if self.save_edited_question():
+                            # Voltar para o estado de seleção após salvar
+                            self.show_edit_form = False
+                
+                # Na tela principal (lista de questões)
+                else:
+                    # Verificar cliques nos botões de filtro de matéria
+                    for i, button in enumerate(self.filter_subject_buttons):
+                        if button.is_clicked(mouse_pos):
+                            # Ativar/desativar este botão
+                            button.is_active = not button.is_active
+                            
+                            # Desativar todos os outros botões de filtro de matéria
+                            if button.is_active:
+                                for j, other_button in enumerate(self.filter_subject_buttons):
+                                    if j != i:
+                                        other_button.is_active = False
+                                
+                                self.current_filter["subject"] = self.subjects[i]
+                            else:
+                                self.current_filter["subject"] = None
+                            
+                            # Aplicar os filtros
+                            self.apply_filters()
+                            break
+                    
+                    # Verificar cliques nos botões de filtro de dificuldade
+                    for i, button in enumerate(self.filter_difficulty_buttons):
+                        if button.is_clicked(mouse_pos):
+                            # Ativar/desativar este botão
+                            button.is_active = not button.is_active
+                            
+                            # Desativar todos os outros botões de filtro de dificuldade
+                            if button.is_active:
+                                for j, other_button in enumerate(self.filter_difficulty_buttons):
+                                    if j != i:
+                                        other_button.is_active = False
+                                
+                                self.current_filter["difficulty"] = self.difficulties[i]
+                            else:
+                                self.current_filter["difficulty"] = None
+                            
+                            # Aplicar os filtros
+                            self.apply_filters()
+                            break
+                    
+                    # Verificar clique no botão de limpar filtros
+                    if self.clear_filter_button.is_clicked(mouse_pos):
+                        self.clear_filter_button.pressed = True
                         
-                # Verificar cliques nos botões de rolagem
+                        # Resetar todos os botões de filtro
+                        for button in self.filter_subject_buttons:
+                            button.is_active = False
+                        
+                        for button in self.filter_difficulty_buttons:
+                            button.is_active = False
+                        
+                        # Limpar os filtros
+                        self.current_filter = {"subject": None, "difficulty": None}
+                        self.apply_filters()
+                    
+                    # Verificar cliques na lista de questões
+                    list_y = self.list_panel.rect.y + 20
+                    item_height = 90
+                    item_spacing = 10
+                    
+                    visible_questions = self.filtered_questions[self.scroll_offset:self.scroll_offset + self.max_items_visible]
+                    for i, question in enumerate(visible_questions):
+                        item_y = list_y + i * (item_height + item_spacing)
+                        item_rect = pygame.Rect(
+                            self.list_panel.rect.x + 20,
+                            item_y,
+                            self.list_panel.rect.width - 80,
+                            item_height
+                        )
+                        
+                        if item_rect.collidepoint(mouse_pos):
+                            # Selecionar esta questão
+                            self.selected_question = question
+                            break
+                
+                # Verificar cliques nos botões de rolagem (sempre visíveis)
                 if self.scroll_up_button.is_clicked(mouse_pos) and self.scroll_offset > 0:
                     self.scroll_up_button.pressed = True
                     self.scroll_offset -= 1
@@ -610,162 +970,259 @@ class QuestionEditScreen:
                         self.scroll_offset += 1
                 
                 # Verificar clique no botão EDITAR
-                if self.edit_button.is_clicked(mouse_pos) and self.selected_question:
-                    self.edit_button.pressed = True
-                    return {"action": "edit_selected_question", "question": self.selected_question}
+                if not self.show_options_form and not self.show_edit_form:
+                    if self.edit_button.is_clicked(mouse_pos) and self.selected_question:
+                        self.edit_button.pressed = True
+                        self.show_edit_form = True
+                        self.create_edit_form()
+                    
+                    # Verificar clique no botão VOLTAR
+                    if self.back_button.is_clicked(mouse_pos):
+                        self.back_button.pressed = True
+                        return {"action": "back_to_menu"}
+            
+            # Lidar com entrada de texto se algum campo estiver ativo
+            if event.type == KEYDOWN:
+                # Verificar se estamos na tela de edição de opções
+                if self.show_options_form:
+                    # Processar entrada para os campos de opções
+                    for option_input in self.option_inputs:
+                        if option_input.active:
+                            if event.key == K_BACKSPACE:
+                                option_input.text = option_input.text[:-1]
+                            else:
+                                option_input.text += event.unicode
                 
-                # Verificar clique no botão VOLTAR
-                if self.back_button.is_clicked(mouse_pos):
-                    self.back_button.pressed = True
-                    return {"action": "back_to_menu"}
+                # Verificar se estamos no formulário de edição principal
+                elif self.show_edit_form:
+                    # Processar entrada para o campo de texto da questão
+                    if self.question_text_input.active:
+                        if event.key == K_BACKSPACE:
+                            self.question_text_input.text = self.question_text_input.text[:-1]
+                        else:
+                            self.question_text_input.text += event.unicode
+                    
+                    # Processar entrada para o campo de dica
+                    elif self.hint_input.active:
+                        if event.key == K_BACKSPACE:
+                            self.hint_input.text = self.hint_input.text[:-1]
+                        else:
+                            self.hint_input.text += event.unicode
         
         return {"action": "none"}
     
     def update(self):
         # Resetar estado dos botões
-        self.apply_filter_button.pressed = False
-        self.clear_filter_button.pressed = False
         self.edit_button.pressed = False
         self.back_button.pressed = False
         self.scroll_up_button.pressed = False
         self.scroll_down_button.pressed = False
         
-        # Atualizar temporizador de mensagem de filtro
-        if self.filter_timer > 0:
-            self.filter_timer -= 1
-            if self.filter_timer == 0:
-                self.filter_message = None
+        if hasattr(self, 'clear_filter_button'):
+            self.clear_filter_button.pressed = False
+        
+        if self.show_edit_form:
+            if hasattr(self, 'edit_options_button'):
+                self.edit_options_button.pressed = False
+            
+            if hasattr(self, 'save_button'):
+                self.save_button.pressed = False
+        
+        if self.show_options_form:
+            if hasattr(self, 'back_to_main_button'):
+                self.back_to_main_button.pressed = False
+            
+            if hasattr(self, 'done_options_button'):
+                self.done_options_button.pressed = False
+        
+        # Atualizar temporizador de mensagem
+        if self.message_timer > 0:
+            self.message_timer -= 1
+            if self.message_timer == 0:
+                self.message = None
     
     def draw(self):
         # Limpa a tela com a cor de fundo
         self.screen.fill(self.bg_color)
         
-        # Desenha o painel principal
-        self.main_panel.draw(self.screen)
-        
-        # Desenha o título
-        title_text = self.title_font.render("Editar Questões", True, (60, 60, 60))
-        title_rect = title_text.get_rect(center=(self.width // 2, 45))
-        self.screen.blit(title_text, title_rect)
-        
-        # Desenha o painel de filtros
-        self.filter_panel.draw(self.screen)
-        
-        # Desenha o texto do filtro
-        filter_label = self.text_font.render("Filtrar por:", True, (80, 80, 80))
-        filter_rect = filter_label.get_rect(topleft=(self.filter_panel.rect.x + 15, self.filter_panel.rect.y + 10))
-        self.screen.blit(filter_label, filter_rect)
-        
-        # Desenha os botões de filtro
-        for button in self.subject_buttons:
-            button.draw(self.screen)
+        # Se estiver na tela de edição de opções, desenhar apenas essa tela
+        if self.show_options_form:
+            # Desenha o painel principal
+            self.option_panel.draw(self.screen)
             
-        for button in self.grade_buttons:
-            button.draw(self.screen)
+            # Desenha o título
+            title_text = self.title_font.render("Editar Opções", True, (60, 60, 60))
+            title_rect = title_text.get_rect(center=(self.center_x, 45))
+            self.screen.blit(title_text, title_rect)
             
-        for button in self.difficulty_buttons:
-            button.draw(self.screen)
+            # Desenha os campos de entrada para as opções
+            for i, option_input in enumerate(self.option_inputs):
+                option_input.draw(self.screen)
+                
+                # Desenha o rótulo da opção
+                letter = chr(65 + i)  # A, B, C, D
+                option_label = self.subtitle_font.render(letter, True, (80, 80, 80))
+                option_rect = option_label.get_rect(midright=(option_input.rect.x - 10, option_input.rect.y + option_input.rect.height // 2))
+                self.screen.blit(option_label, option_rect)
+            
+            # Desenha os botões de alternativa correta
+            for button in self.correct_option_buttons:
+                button.draw(self.screen)
+            
+            # Desenha os botões de dificuldade
+            for button in self.difficulty_buttons:
+                button.draw(self.screen)
+            
+            # Desenha os botões de navegação
+            self.back_to_main_button.draw(self.screen)
+            self.done_options_button.draw(self.screen)
+            
+            # Desenha instruções
+            instruct1 = self.small_font.render("Selecione a alternativa correta:", True, (80, 80, 80))
+            instruct1_rect = instruct1.get_rect(bottomleft=(self.center_x - 330, self.option_inputs[0].rect.y - 10))
+            self.screen.blit(instruct1, instruct1_rect)
+            
+            instruct2 = self.small_font.render("Selecione a dificuldade:", True, (80, 80, 80))
+            instruct2_rect = instruct2.get_rect(bottomleft=(self.difficulty_buttons[0].rect.x, self.difficulty_buttons[0].rect.y - 10))
+            self.screen.blit(instruct2, instruct2_rect)
         
-        # Desenha os botões de aplicar/limpar filtro
-        self.apply_filter_button.draw(self.screen)
-        self.clear_filter_button.draw(self.screen)
-        
-        # Desenha o painel da lista de questões
-        self.list_panel.draw(self.screen)
-        
-        # Desenha a mensagem de filtro se houver
-        if self.filter_message:
-            message_color = (50, 50, 50) if self.filter_active else COLORS.get("warning", (232, 181, 12))
-            message_surf = self.text_font.render(self.filter_message, True, message_color)
-            message_rect = message_surf.get_rect(midtop=(self.width // 2, self.list_panel.rect.y + 10))
-            self.screen.blit(message_surf, message_rect)
-        
-        # Desenha as questões filtradas
-        if len(self.filtered_questions) == 0:
-            # Mensagem se não houver questões
-            no_questions_text = self.text_font.render("Nenhuma questão encontrada", True, (100, 100, 100))
-            no_questions_rect = no_questions_text.get_rect(center=(self.list_panel.rect.centerx, self.list_panel.rect.centery))
-            self.screen.blit(no_questions_text, no_questions_rect)
         else:
-            # Desenha as questões visíveis
-            start_y = self.list_panel.rect.y + 40
-            item_height = 80
-            item_spacing = 10
+            # Desenha o painel principal
+            self.main_panel.draw(self.screen)
             
-            visible_items = self.filtered_questions[self.scroll_offset:self.scroll_offset + self.max_items_visible]
-            for i, question in enumerate(visible_items):
-                item_y = start_y + i * (item_height + item_spacing)
-                
-                # Verifica se a questão está selecionada
-                is_selected = self.selected_question and self.selected_question["id"] == question["id"]
-                
-                question_item = QuestionListItem(
-                    self.list_panel.rect.x + 20,
-                    item_y,
-                    self.list_panel.rect.width - 80,
-                    item_height,
-                    self.bg_color,
-                    self.light_shadow,
-                    self.dark_shadow,
-                    question["id"],
-                    question["text"],
-                    question["subject"],
-                    question["grade"],
-                    question["difficulty"],
-                    self.text_font,
-                    is_selected
-                )
-                question_item.draw(self.screen)
+            # Desenha o título
+            title_text = self.title_font.render("Editar Questões", True, (60, 60, 60))
+            title_rect = title_text.get_rect(center=(self.center_x, 45))
+            self.screen.blit(title_text, title_rect)
             
-            # Desenha indicadores de rolagem se houver mais itens
-            if len(self.filtered_questions) > self.max_items_visible:
-                self.scroll_up_button.draw(self.screen)
-                self.scroll_down_button.draw(self.screen)
+            # Desenha o painel de filtros
+            self.filter_panel.draw(self.screen)
+            
+            # Desenha o painel da lista de questões
+            self.list_panel.draw(self.screen)
+            
+            # Desenha os botões de filtro
+            for button in self.filter_subject_buttons:
+                button.draw(self.screen)
+            
+            for button in self.filter_difficulty_buttons:
+                button.draw(self.screen)
+            
+            # Desenha o botão de limpar filtros
+            self.clear_filter_button.draw(self.screen)
+            
+            # Desenha os rótulos para os filtros
+            subject_label = self.small_font.render("Filtrar por matéria:", True, (80, 80, 80))
+            subject_rect = subject_label.get_rect(topleft=(self.filter_subject_buttons[0].rect.x, self.filter_subject_buttons[0].rect.y - 20))
+            self.screen.blit(subject_label, subject_rect)
+            
+            difficulty_label = self.small_font.render("Filtrar por dificuldade:", True, (80, 80, 80))
+            difficulty_rect = difficulty_label.get_rect(topleft=(self.filter_difficulty_buttons[0].rect.x, self.filter_difficulty_buttons[0].rect.y - 20))
+            self.screen.blit(difficulty_label, difficulty_rect)
+            
+            # Desenha a lista de questões
+            if len(self.filtered_questions) == 0:
+                # Mensagem se não houver questões
+                no_questions_text = self.text_font.render("Nenhuma questão encontrada", True, (100, 100, 100))
+                no_questions_rect = no_questions_text.get_rect(center=(self.list_panel.rect.centerx, self.list_panel.rect.centery))
+                self.screen.blit(no_questions_text, no_questions_rect)
+            else:
+                # Desenha as questões visíveis
+                list_y = self.list_panel.rect.y + 20
+                item_height = 90
+                item_spacing = 10
                 
-                # Indicador de posição da rolagem
-                total_items = len(self.filtered_questions)
-                progress_height = 100
-                progress_rect = pygame.Rect(
-                    self.scroll_up_button.rect.centerx - 2,
-                    self.scroll_up_button.rect.bottom + 10,
-                    4,
-                    progress_height
-                )
-                pygame.draw.rect(self.screen, (200, 200, 200), progress_rect, border_radius=2)
-                
-                # Indicador de posição atual
-                if total_items > 0:
-                    indicator_height = max(20, progress_height / total_items * self.max_items_visible)
-                    indicator_pos = (self.scroll_offset / max(1, total_items - self.max_items_visible)) * (progress_height - indicator_height)
-                    indicator_rect = pygame.Rect(
-                        progress_rect.x - 1,
-                        progress_rect.y + indicator_pos,
-                        6,
-                        indicator_height
+                visible_questions = self.filtered_questions[self.scroll_offset:self.scroll_offset + self.max_items_visible]
+                for i, question in enumerate(visible_questions):
+                    item_y = list_y + i * (item_height + item_spacing)
+                    
+                    # Verifica se a questão está selecionada
+                    is_selected = self.selected_question and self.selected_question["id"] == question["id"]
+                    
+                    question_list_item = QuestionListItem(
+                        self.list_panel.rect.x + 20,
+                        item_y,
+                        self.list_panel.rect.width - 80,
+                        item_height,
+                        self.bg_color,
+                        self.light_shadow,
+                        self.dark_shadow,
+                        question["id"],
+                        question["text"],
+                        question["subject"],
+                        question["difficulty"],
+                        self.text_font,
+                        is_selected
                     )
-                    pygame.draw.rect(self.screen, self.accent_color, indicator_rect, border_radius=3)
-        
-        # Desenha o botão de editar (ativo apenas se uma questão estiver selecionada)
-        if self.selected_question:
-            self.edit_button.draw(self.screen)
-        else:
-            # Versão desativada do botão
-            disabled_button = NeumorphicButton(
-                self.edit_button.rect.x, self.edit_button.rect.y,
-                self.edit_button.rect.width, self.edit_button.rect.height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-                (180, 180, 180),  # Cinza para botão desativado
-                "EDITAR QUESTÃO", self.text_font
-            )
-            disabled_button.draw(self.screen)
+                    question_list_item.draw(self.screen)
+                
+                # Desenha indicadores de rolagem se houver mais itens
+                if len(self.filtered_questions) > self.max_items_visible:
+                    self.scroll_up_button.draw(self.screen)
+                    self.scroll_down_button.draw(self.screen)
             
-            # Mensagem de dica
-            hint_text = self.small_font.render("Selecione uma questão para editar", True, (120, 120, 120))
-            hint_rect = hint_text.get_rect(midtop=(self.edit_button.rect.centerx, self.edit_button.rect.bottom + 5))
-            self.screen.blit(hint_text, hint_rect)
+            # Se o formulário de edição estiver aberto, desenha-o
+            if self.show_edit_form and self.selected_question:
+                # Desenha o painel do formulário
+                self.form_panel.draw(self.screen)
+                
+                # Desenha o título do formulário
+                form_title = self.subtitle_font.render(f"Editar Questão #{self.selected_question['id']}", True, (60, 60, 60))
+                form_title_rect = form_title.get_rect(midtop=(self.center_x, self.form_panel.rect.y + 10))
+                self.screen.blit(form_title, form_title_rect)
+                
+                # Desenha os campos de edição
+                self.question_text_input.draw(self.screen)
+                self.hint_input.draw(self.screen)
+                
+                # Desenha os rótulos
+                hint_label = self.small_font.render("Dica:", True, (80, 80, 80))
+                hint_rect = hint_label.get_rect(bottomleft=(self.hint_input.rect.x, self.hint_input.rect.y - 5))
+                self.screen.blit(hint_label, hint_rect)
+                
+                subject_label = self.small_font.render("Matéria:", True, (80, 80, 80))
+                subject_rect = subject_label.get_rect(bottomleft=(self.subject_buttons[0].rect.x, self.subject_buttons[0].rect.y - 5))
+                self.screen.blit(subject_label, subject_rect)
+                
+                # Desenha os botões de matéria
+                for button in self.subject_buttons:
+                    button.draw(self.screen)
+                
+                # Desenha o botão para editar opções
+                self.edit_options_button.draw(self.screen)
+                
+                # Desenha os botões de salvar e voltar
+                self.back_button.draw(self.screen)
+                self.save_button.draw(self.screen)
+            else:
+                # Desenha o botão de editar (ativo apenas se uma questão estiver selecionada)
+                if self.selected_question:
+                    self.edit_button.draw(self.screen)
+                else:
+                    # Versão desativada do botão
+                    disabled_button = NeumorphicButton(
+                        self.edit_button.rect.x, self.edit_button.rect.y,
+                        self.edit_button.rect.width, self.edit_button.rect.height,
+                        self.bg_color, self.light_shadow, self.dark_shadow,
+                        (180, 180, 180),  # Cinza para botão desativado
+                        "EDITAR", self.text_font
+                    )
+                    disabled_button.draw(self.screen)
+                    
+                    # Mensagem de dica
+                    hint_text = self.small_font.render("Selecione uma questão para editar", True, (120, 120, 120))
+                    hint_rect = hint_text.get_rect(midtop=(self.edit_button.rect.centerx, self.edit_button.rect.bottom + 5))
+                    self.screen.blit(hint_text, hint_rect)
+                
+                # Desenha o botão de voltar
+                self.back_button.draw(self.screen)
         
-        # Desenha o botão de voltar
-        self.back_button.draw(self.screen)
+        # Desenha mensagem de feedback, se houver
+        if self.message:
+            message_color = COLORS.get("success", (75, 181, 67)) if "sucesso" in self.message else COLORS.get("error", (232, 77, 77))
+            message_surf = self.text_font.render(self.message, True, message_color)
+            message_rect = message_surf.get_rect(midbottom=(self.center_x, self.height - 10))
+            self.screen.blit(message_surf, message_rect)
         
         # Atualiza a tela
         pygame.display.flip()

@@ -97,7 +97,7 @@ class NeumorphicButton:
 
 class StudentRankItem:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 rank, student_name, ra, series, score, games_played, font):
+                 rank, student_name, ra, series, score, font):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
         self.light_shadow = light_shadow
@@ -107,7 +107,6 @@ class StudentRankItem:
         self.ra = ra
         self.series = series
         self.score = score
-        self.games_played = games_played
         self.font = font
         self.small_font = pygame.font.SysFont('Arial', font.get_height() - 4)
         
@@ -163,11 +162,6 @@ class StudentRankItem:
         surface.blit(series_surf, series_rect)
         
         # Jogos jogados
-        games_x = series_x + 100
-        games_text = f"Jogos: {self.games_played}"
-        games_surf = self.small_font.render(games_text, True, (100, 100, 100))
-        games_rect = games_surf.get_rect(midleft=(games_x, center_y))
-        surface.blit(games_surf, games_rect)
         
         # Pontuação (à direita)
         score_text = f"R$ {self.score:,}"
@@ -563,7 +557,6 @@ class RankingScreen:
                     student["ra"],
                     student["series"],
                     student["score"],
-                    student["games_played"],
                     self.text_font
                 )
                 student_item.draw(self.screen)
