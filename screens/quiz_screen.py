@@ -124,17 +124,24 @@ class ProgressBar:
                              (checkpoint_x, self.rect.y + self.rect.height), 2)
 
 
-
     MONEY_VALUES = [
-        [1000, 2000, 3000, 5000, 10000],
-        [20000, 30000, 50000, 100000, 200000],
-        [300000, 500000, 750000, 1000000, 2000000]
+        [1000, 2000, 3000, 5000, 10000],        # Nível 0 (perguntas 0-4)
+        [20000, 30000, 50000, 100000, 200000],  # Nível 1 (perguntas 5-9)
+        [300000, 500000, 750000, 1000000, 2000000] # Nível 2 (perguntas 10-14)
     ]
 
-    def get_money_for_question(self, question_number):
-        difficulty = 0 if question_number < 5 else 1 if question_number < 10 else 2
-        value_index = question_number % 5
-        return self.money_values[difficulty][value_index]
+    def get_money_for_question(question_number):
+ 
+        difficulty_tier = 0 
+        if question_number >= CHECKPOINT_INTERVALS and question_number < CHECKPOINT_INTERVALS * 2: 
+            difficulty_tier = 1
+        elif question_number >= CHECKPOINT_INTERVALS * 2:
+            difficulty_tier = 2
+        value_index = question_number % CHECKPOINT_INTERVALS
+        if difficulty_tier < len(MONEY_VALUES) and value_index < len(MONEY_VALUES[difficulty_tier]):
+            return MONEY_VALUES[difficulty_tier][value_index]
+        print(f"AVISO: Não foi possível determinar o valor para a pergunta de índice {question_number}")
+        return 0
 
 class QuizScreen:
     def __init__(self, screen, user_data, game_config):
@@ -623,14 +630,14 @@ class QuizScreen:
                 button.correct = False
         
         if self.answer_correct:
-            self.accumulated_money = self.question_generator.get_money_for_question(self.current_question)
-            
+            self.accumulated_money = get_money_for_question(self.current_question)
             next_question = self.current_question + 1
             if next_question % CHECKPOINT_INTERVALS == 0:
                 self.saved_money = self.accumulated_money
         else:
             self.waiting_for_next = True
             self.wait_timer = pygame.time.get_ticks()
+            self.show_result = True
 
     def go_to_next_question(self):
         self.selected_option = None
@@ -732,7 +739,8 @@ class QuizScreen:
             if self.show_result:
                 self.next_button.draw(self.screen)
                 
-                value_text = f"Valor: R$ {self.question_generator.get_money_for_question(self.current_question):,}"
+                value_answer = get_money_for_question(self.current_question)
+                value_text = f"Valor: R$ {value_answer}"
                 value_surf = self.info_font.render(value_text, True, (50, 50, 50))
                 value_rect = value_surf.get_rect(center=(self.left_panel.rect.width // 2 + 20, self.height - 120))
                 self.screen.blit(value_surf, value_rect)
