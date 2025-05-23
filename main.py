@@ -73,6 +73,10 @@ print("Arquivo config.py criado com sucesso!")
 
 # Importar as telas
 try:
+    from screens.teacher.remove_user_screen import RemoveUserScreen
+    from screens.teacher.edit_user_screen import EditUserScreen
+    from screens.teacher.add_user_screen import AddUserScreen
+    from screens.teacher.user_management_screen import UserManagementScreen
     from screens.teacher.class_create_screen import ClassCreateScreen
     from screens.teacher.class_edit_screen import ClassEditScreen
     from screens.teacher.class_remove_screen import ClassRemoveScreen
@@ -140,20 +144,17 @@ def main():
                 next_screen = "game_config"
             elif result["action"] == "show_ranking" and user_data["user_type"] == "teacher":
                 print("Mostrando ranking...")
-                next_screen = "ranking_screen"  # Temporário: volta para o menu
-            elif result["action"] == "show_profile":
-                print("Mostrando perfil...")
-                next_screen = "menu"  # Temporário: volta para o menu
-            elif result["action"] == "manage_students" and user_data["user_type"] == "teacher":
+                next_screen = "ranking_screen" 
+            elif result["action"] == "manage_users" and user_data["user_type"] == "teacher":
                 print("Gerenciando alunos...")
-                next_screen = "menu"  # Temporário: volta para o menu
+                next_screen = "manage_users"
             elif result["action"] == "manage_questions" and user_data["user_type"] == "teacher":
                 print("Mudando para tela de gerenciamento de perguntas")
                 next_screen = "question_management"
             elif result["action"] == "show_history" and user_data["user_type"] == "student":
                 print("Mostrando histórico de jogos...")
                 next_screen = "game_history"
-            elif result["action"] == "manage_classes" and user_data["user_type"] == "teacher": # Nova opção
+            elif result["action"] == "manage_classes" and user_data["user_type"] == "teacher":
               print("Mudando para tela de gerenciamento de turmas")
               next_screen = "class_management"
             elif result["action"] == "logout":
@@ -162,7 +163,49 @@ def main():
             else:
                 running = False
                 
-        
+        elif next_screen == "manage_users":
+         current_screen = UserManagementScreen(screen, user_data)
+         result = current_screen.run()
+    
+         if result["action"] == "add_users":
+               next_screen = "add_users"
+         elif result["action"] == "edit_users":
+             next_screen = "edit_users"
+         elif result["action"] == "remove_users":
+              next_screen = "remove_users"
+         elif result["action"] == "back_to_menu":
+              next_screen = "menu"
+         elif result["action"] == "exit":
+                running = False
+
+        elif next_screen == "remove_users":
+          print("Carregando tela de remover usuários...")
+          current_screen = RemoveUserScreen(screen, user_data)
+          result = current_screen.run()
+
+          if result["action"] == "back_to_user_management":
+            next_screen = "manage_users"
+          elif result["action"] == "exit":
+            running = False
+
+        elif next_screen == "edit_users":
+         print("Carregando tela de editar usuários...")
+         current_screen = EditUserScreen(screen, user_data)
+         result = current_screen.run()
+
+         if result["action"] == "back_to_user_management":
+            next_screen = "manage_users"
+         elif result["action"] == "exit":
+            running = False
+
+        elif next_screen == "add_users":
+           current_screen = AddUserScreen(screen, user_data)
+           result = current_screen.run()
+
+           if result["action"] == "back_to_user_management":
+              next_screen = "manage_users"
+           elif result["action"] == "exit":
+              running = False
         
         elif next_screen == "class_management":
             current_screen = ClassManagementScreen(screen, user_data)
