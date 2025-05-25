@@ -1,6 +1,3 @@
-# screens/teacher/class_edit_screen.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 from pygame.locals import *
@@ -15,12 +12,13 @@ except ImportError:
         "background": (235, 235, 240),
         "light_shadow": (255, 255, 255),
         "dark_shadow": (205, 205, 210),
-        "accent": (106, 130, 251),
+        "accent": (27, 185, 185),
         "text": (60, 60, 60),
         "success": (75, 181, 67),
-        "warning": (232, 181, 12),
-        "error": (232, 77, 77)
-    }
+        "warning": (251, 164, 31),
+        "error": (232, 77, 77),
+        "black": (0, 0, 0),
+}
 
 # Classes para componentes de UI neumórficos
 class NeumorphicPanel:
@@ -34,14 +32,9 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+
+        # Contorno preto fino
+        pygame.draw.rect(surface, COLORS["black"], self.rect, width=1, border_radius=self.border_radius)
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -84,14 +77,7 @@ class NeumorphicButton:
         else:
             # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-            
+
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
@@ -119,13 +105,6 @@ class ClassListItem:
         bg_color = (220, 230, 255) if self.is_selected else self.bg_color
         
         pygame.draw.rect(surface, bg_color, self.rect, border_radius=10)
-        
-        # Sombras neumórficas
-        shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-        
-        shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
         
         # Adicionar borda especial se selecionado
         if self.is_selected:
@@ -225,12 +204,14 @@ class ClassEditScreen:
         self.user_data = user_data  # Contém user_type (teacher) e username
         self.center_x = self.width // 2
         
-        # Cores do design neumorfista
+        # Cores 
         self.bg_color = COLORS["background"]
+        self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
-        
+        self.success_color = COLORS["success"]
+
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 32, bold=True)
         self.subtitle_font = pygame.font.SysFont('Arial', 24, bold=True)
@@ -306,7 +287,7 @@ class ClassEditScreen:
         self.edit_button = NeumorphicButton(
             self.center_x - 75, 530,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "EDITAR", self.text_font
         )
         
@@ -314,7 +295,7 @@ class ClassEditScreen:
         self.back_button = NeumorphicButton(
             self.center_x - 250, 530,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de voltar
             "VOLTAR", self.text_font
         )
@@ -323,7 +304,7 @@ class ClassEditScreen:
         self.save_button = NeumorphicButton(
             self.center_x + 100, 530,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             COLORS.get("success", (75, 181, 67)),  # Verde para salvar
             "SALVAR", self.text_font
         )
@@ -751,8 +732,8 @@ class ClassEditScreen:
                 disabled_button = NeumorphicButton(
                     self.edit_button.rect.x, self.edit_button.rect.y,
                     self.edit_button.rect.width, self.edit_button.rect.height,
-                    self.bg_color, self.light_shadow, self.dark_shadow,
-                    (180, 180, 180),  # Cinza para botão desativado
+                    self.warning_color, self.light_shadow, self.dark_shadow,
+                    (180, 180, 180),  
                     "EDITAR", self.text_font
                 )
                 disabled_button.draw(self.screen)

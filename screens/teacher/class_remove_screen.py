@@ -1,6 +1,3 @@
-# screens/teacher/class_remove_screen.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 from pygame.locals import *
@@ -15,11 +12,12 @@ except ImportError:
         "background": (235, 235, 240),
         "light_shadow": (255, 255, 255),
         "dark_shadow": (205, 205, 210),
-        "accent": (106, 130, 251),
+        "accent": (27, 185, 185),
         "text": (60, 60, 60),
         "success": (75, 181, 67),
-        "warning": (232, 181, 12),
-        "error": (232, 77, 77)
+        "warning": (251, 164, 31),
+        "error": (232, 77, 77),
+        "black": (0, 0, 0),
     }
 
 # Classes para componentes de UI neumórficos
@@ -34,14 +32,9 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+        # Desenhar borda preta fina
+        pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=self.border_radius)
+
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -84,13 +77,10 @@ class NeumorphicButton:
         else:
             # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
+
+            # Borda preta fina ao redor do botão
+            pygame.draw.rect(surface, (0, 0, 0), self.rect, 
+            width=1, border_radius=10)
             
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)

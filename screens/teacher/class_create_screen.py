@@ -1,6 +1,3 @@
-# screens/teacher/class_create_screen.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 from pygame.locals import *
@@ -15,12 +12,13 @@ except ImportError:
         "background": (235, 235, 240),
         "light_shadow": (255, 255, 255),
         "dark_shadow": (205, 205, 210),
-        "accent": (106, 130, 251),
+        "accent": (27, 185, 185),
         "text": (60, 60, 60),
         "success": (75, 181, 67),
-        "warning": (232, 181, 12),
-        "error": (232, 77, 77)
-    }
+        "warning": (251, 164, 31),
+        "error": (232, 77, 77),
+        "black": (0, 0, 0),
+}
 
 # Classes para componentes de UI neumórficos
 class NeumorphicPanel:
@@ -34,14 +32,8 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+    # Desenhar borda preta fina
+        pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=self.border_radius)
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -82,17 +74,13 @@ class NeumorphicButton:
             text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
             surface.blit(self.text_surf, text_rect)
         else:
-            # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-            
-            # Desenhar texto
+
+    # Borda preta fina ao redor do botão
+            pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, 
+            border_radius=10)
+
+    # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
 class NeumorphicInput:
@@ -121,10 +109,6 @@ class NeumorphicInput:
         pygame.draw.rect(surface, self.bg_color, 
                        pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
                        border_radius=10)
-        
-        # Desenhar sombras internas (invertidas)
-        shadow_rect_dark = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
         
         shadow_rect_light = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
         pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
@@ -168,13 +152,15 @@ class ClassCreateScreen:
         self.user_data = user_data  # Contém user_type (teacher) e username
         self.center_x = self.width // 2
         
-        # Cores do design neumorfista
+        # Cores 
         self.bg_color = COLORS["background"]
+        self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
-        self.success_color = COLORS.get("success", (75, 181, 67))
-        
+        self.success_color = COLORS["success"]
+
+
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 32, bold=True)
         self.subtitle_font = pygame.font.SysFont('Arial', 24, bold=True)
@@ -192,18 +178,11 @@ class ClassCreateScreen:
         self.setup_ui()
         
     def setup_ui(self):
-        # Painel principal
-        self.main_panel = NeumorphicPanel(
-            self.center_x - 350, 20, 
-            700, 560, 
-            self.bg_color, self.light_shadow, self.dark_shadow
-        )
-        
         # Painel do formulário
         self.form_panel = NeumorphicPanel(
-            self.center_x - 300, 70, 
-            600, 440, 
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.center_x - 300, 20, 
+            600, 560, 
+            self.accent_color, self.light_shadow, self.dark_shadow,
             border_radius=15
         )
         
@@ -211,7 +190,7 @@ class ClassCreateScreen:
         self.class_name_input = NeumorphicInput(
             self.center_x - 250, 130,
             500, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             "Nome da Turma (ex: 3º Ano A)", self.text_font
         )
         
@@ -227,7 +206,7 @@ class ClassCreateScreen:
             button = NeumorphicButton(
                 btn_x, btn_y,
                 btn_width, btn_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
+                self.warning_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, grade, self.text_font,
                 is_toggle=True, is_active=False
             )
@@ -244,7 +223,7 @@ class ClassCreateScreen:
             button = NeumorphicButton(
                 btn_x, btn_y,
                 btn_width, btn_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
+                self.warning_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, shift, self.text_font,
                 is_toggle=True, is_active=False
             )
@@ -254,7 +233,7 @@ class ClassCreateScreen:
         self.year_input = NeumorphicInput(
             self.center_x - 250, 400,
             500, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             "Ano Letivo (ex: 2025)", self.text_font,
             is_numeric=True, max_length=4
         )
@@ -268,7 +247,7 @@ class ClassCreateScreen:
         self.cancel_button = NeumorphicButton(
             self.center_x - button_width - 20, button_y,
             button_width, button_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             COLORS.get("error", (232, 77, 77)), "CANCELAR", self.subtitle_font
         )
         
@@ -276,7 +255,7 @@ class ClassCreateScreen:
         self.save_button = NeumorphicButton(
             self.center_x + 20, button_y,
             button_width, button_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             self.success_color, "SALVAR", self.subtitle_font
         )
         
@@ -462,15 +441,7 @@ class ClassCreateScreen:
     
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
-        
-        # Desenha o painel principal
-        self.main_panel.draw(self.screen)
-        
-        # Desenha o título
-        title_text = self.title_font.render("Criar Nova Turma", True, (60, 60, 60))
-        title_rect = title_text.get_rect(center=(self.center_x, 45))
-        self.screen.blit(title_text, title_rect)
+        self.screen.fill(self.warning_color)
         
         # Desenha o painel do formulário
         self.form_panel.draw(self.screen)
@@ -491,6 +462,12 @@ class ClassCreateScreen:
         year_label = self.subtitle_font.render("Ano Letivo:", True, (60, 60, 60))
         year_rect = year_label.get_rect(topleft=(self.year_input.rect.x, self.year_input.rect.y - 30))
         self.screen.blit(year_label, year_rect)
+
+         # Desenha o título
+        title_text = self.title_font.render("Criar Nova Turma", True, (60, 60, 
+        60))
+        title_rect = title_text.get_rect(center=(self.center_x, 45))
+        self.screen.blit(title_text, title_rect)
         
         # Desenha os campos de entrada
         self.class_name_input.draw(self.screen)
@@ -507,6 +484,7 @@ class ClassCreateScreen:
         # Desenha os botões de salvar e cancelar
         self.save_button.draw(self.screen)
         self.cancel_button.draw(self.screen)
+        
         
         # Desenha mensagens de erro ou sucesso, se existirem
         if self.error_message:

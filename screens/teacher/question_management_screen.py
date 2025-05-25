@@ -29,7 +29,6 @@ class NeumorphicPanel:
         self.dark_shadow = dark_shadow
         self.border_radius = border_radius
 
-        self.bg_color = COLORS["background"]
         self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
@@ -37,7 +36,7 @@ class NeumorphicPanel:
     
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
-        pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
+        pygame.draw.rect(surface, self.accent_color, self.rect, border_radius=self.border_radius)
 
 
 class NeumorphicButton:
@@ -67,35 +66,60 @@ class NeumorphicButton:
         
         if is_pressed:
             # Estado pressionado: inverter sombras e aplicar cor de destaque
-            pygame.draw.rect(surface, self.bg_color, 
-                           pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
-                           border_radius=10)
+            pygame.draw.rect(
+                surface,
+                self.bg_color,
+                pygame.Rect(
+                    self.rect.x + 2,
+                    self.rect.y + 2,
+                    self.rect.width - 4,
+                    self.rect.height - 4
+                ),
+                border_radius=10
+            )
             
             # Borda com cor de destaque
-            pygame.draw.rect(surface, self.accent_color, 
-                           self.rect, border_radius=10, width=2)
+            pygame.draw.rect(
+                surface,
+                self.accent_color,
+                self.rect,
+                border_radius=10,
+                width=2
+            )
             
             # Deslocar o texto ligeiramente
-            text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
+            text_rect = self.text_surf.get_rect(
+                center=(self.rect.centerx + 1, self.rect.centery + 1)
+            )
             surface.blit(self.text_surf, text_rect)
+        
         else:
             # Borda preta externa
-            pygame.draw.rect(surface, (0, 0, 0), self.rect.inflate(4, 4), border_radius=12)
-
+            pygame.draw.rect(
+                surface,
+                (0, 0, 0),
+                self.rect.inflate(4, 4),
+                border_radius=12
+            )
             # Botão em si
-            pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-
+            pygame.draw.rect(
+                surface,
+                self.bg_color,
+                self.rect,
+                border_radius=10
+            )
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
+
 
 class QuestionManagementScreen:
     def __init__(self, screen, user_data):
         self.screen = screen
         self.running = True
         self.width, self.height = screen.get_size()
-        self.user_data = user_data  # Contém user_type (teacher) e username
+        self.user_data = user_data  
         
-        # Cores do design neumorfista
+        # Cores 
         self.bg_color = COLORS["background"]
         self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
@@ -210,15 +234,16 @@ class QuestionManagementScreen:
     def draw(self):
         # Limpa a tela com a cor de fundo
         self.screen.fill(self.warning_color)
+
         # Caixa ao redor de todos os elementos (borda preta)
-        margin = 40
+        margin = 30
         pygame.draw.rect(
             self.screen, 
             (0, 0, 0), 
-        pygame.Rect(margin, margin, self.width - 2 * margin, self.height - 2 * margin),
-        width=3,  # Espessura da borda
-        border_radius=25
-)
+            pygame.Rect(margin, margin, self.width - 2 * margin, self.height - 2 * margin),
+            width=3,  # Espessura da borda
+            border_radius=25
+        )
        
         # Desenha o painel principal
         self.main_panel.draw(self.screen)

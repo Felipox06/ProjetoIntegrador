@@ -17,7 +17,7 @@ except ImportError:
     "accent": (27, 185, 185),
     "text": (0, 0, 0),
     "success": (75, 181, 67),
-    "warning": (251, 164, 31),
+    "warning": (251, 164, 31),  # Amarelo que será usado nos botões
     "error": (232, 77, 77),
     "black": (0, 0, 0),
 }
@@ -32,7 +32,6 @@ class NeumorphicPanel:
     
     def draw(self, surface):
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-
         pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=self.border_radius)
 
 class NeumorphicButton:
@@ -51,7 +50,7 @@ class NeumorphicButton:
         self.icon = icon
         
         # Preparar superfície de texto
-        self.text_surf = font.render(text, True, (50, 50, 50))
+        self.text_surf = font.render(text, True, (50, 50, 50))  # Texto cinza escuro
         self.text_rect = self.text_surf.get_rect(center=self.rect.center)
         
         # Se tiver ícone, ajustar posição do texto
@@ -79,17 +78,17 @@ class NeumorphicButton:
                 border_radius=10
             )
 
-        #contorno preto:
+        # Contorno preto:
         pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=10)
 
         text_rect = self.text_surf.get_rect(center=self.rect.center)
         if self.icon:
             text_rect.centerx += 15  # Desloca o texto para a direita se houver ícone
 
-        #texto:
+        # Texto:
         surface.blit(self.text_surf, text_rect)
 
-        # ícone:
+        # Ícone:
         if self.icon:
             icon_rect = self.icon.get_rect(midright=(text_rect.left - 5, text_rect.centery))
             surface.blit(self.icon, icon_rect)
@@ -108,13 +107,13 @@ class MenuScreen:
             self.light_shadow = config.COLORS["light_shadow"]
             self.dark_shadow = config.COLORS["dark_shadow"]
             self.accent_color = config.COLORS["accent"]
-            self.warning_color = config.COLORS["warning"]
+            self.warning_color = config.COLORS["warning"]  # Amarelo (251, 164, 31)
         except (AttributeError, NameError):
             self.bg_color = (235, 235, 240)
             self.light_shadow = (255, 255, 255)
             self.dark_shadow = (205, 205, 210)
-            self.accent_color = (106, 130, 251)
-            self.warning_color = (251, 164, 31)
+            self.accent_color = (27, 185, 185)
+            self.warning_color = (251, 164, 31)  # Amarelo
         
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
@@ -125,16 +124,14 @@ class MenuScreen:
         center_x = self.width // 2
         
         # Painel principal
-        panel_height = 520 if self.user_data["user_type"] == "teacher" else 500
         self.main_panel = NeumorphicPanel(
-            center_x - 350, 50, 700, 
-            panel_height, 
+            center_x - 350, 50, 
+            700, 500, 
             self.accent_color, self.light_shadow, self.dark_shadow
         )
         
         # Criar botões com base no tipo de usuário
         self.buttons = self.create_buttons()
-        
         
     def create_buttons(self):
         buttons = []
@@ -145,74 +142,62 @@ class MenuScreen:
             buttons.append(NeumorphicButton(
                 center_x - 250, 180,
                 500, 60,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
+                self.warning_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, "JOGAR", self.subtitle_font
             ))
             
             buttons.append(NeumorphicButton(
                 center_x - 250, 270,
                 500, 60,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
+                self.warning_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, "Pontuação", self.subtitle_font
             ))
-            
-            # Botão de sair para estudantes 
+             
+            # Botão de sair para estudante
             buttons.append(NeumorphicButton(
-                center_x - 250, 450,
+                center_x - 250, 360,
                 500, 40,
-                self.warning_color, self.light_shadow, self.dark_shadow, 
-                (232, 77, 77),  
-                "SAIR", self.text_font
-            ))
-
-        else:
-            # Para professores - todos os botões de gerenciamento
-            buttons.append(NeumorphicButton(
-                center_x - 250, 160,
-                500, 55,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
-                self.accent_color, "JOGAR", self.subtitle_font
-            ))
-        
-            buttons.append(NeumorphicButton(
-                center_x - 250, 230,
-                500, 55,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
-                self.accent_color, "GERENCIAR QUESTÕES", self.subtitle_font
-            ))
-        
-            buttons.append(NeumorphicButton(
-                center_x - 250, 300,
-                500, 55,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
-                self.accent_color, "GERENCIAR TURMAS", self.subtitle_font
-            ))
+                self.warning_color, self.light_shadow, self.dark_shadow,
+                (232, 77, 77), "SAIR", self.text_font))
             
-            # Botão GERENCIAR USUÁRIOS (com fundo amarelo e texto roxo)
+        else:
+            # Para professores - botões amarelos
             buttons.append(NeumorphicButton(
-                center_x - 250, 370,
-                500, 55,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
-                (180, 120, 255),  # Cor roxa para diferenciar
-                "GERENCIAR USUÁRIOS", self.subtitle_font
+                center_x - 250, 180,
+                500, 60,
+                self.warning_color, self.light_shadow, self.dark_shadow,
+                self.accent_color, "Gerenciar Turma", self.subtitle_font
+            ))
+        
+            buttons.append(NeumorphicButton(
+                center_x - 250, 260,
+                500, 60,
+                self.warning_color, self.light_shadow, self.dark_shadow,
+                self.accent_color, "Gerenciar Questão", self.subtitle_font
+            ))
+        
+            buttons.append(NeumorphicButton(
+                center_x - 250, 340,
+                500, 60,
+                self.warning_color, self.light_shadow, self.dark_shadow,
+                self.accent_color, "Visualizar Ranking", self.subtitle_font
             ))
            
             buttons.append(NeumorphicButton(
-                center_x - 250, 440,
-                500, 55,
-                self.warning_color, self.light_shadow, self.dark_shadow,  # Fundo amarelo warning
-                self.accent_color, "RANKING", self.subtitle_font
+                center_x - 250, 420,
+                500, 60,
+                self.warning_color, self.light_shadow, self.dark_shadow,
+                self.accent_color, "JOGAR", self.subtitle_font
             ))
-            
-            # Botão de sair para professores (mantemos vermelho como destaque)
+
+            # Botão de sair também amarelo
             buttons.append(NeumorphicButton(
                 center_x - 250, 500,
                 500, 40,
                 self.warning_color, self.light_shadow, self.dark_shadow,
-                (232, 77, 77),  
-                "SAIR", self.text_font
+                (232, 77, 77), "SAIR", self.text_font
             ))
-        
+
         return buttons
     
     def handle_events(self):
@@ -239,17 +224,15 @@ class MenuScreen:
                                 return {"action": "logout"}
                         # Processar ação do botão para professores
                         else:
-                            if i == 0:  # JOGAR
-                                return {"action": "play_game"}
-                            elif i == 1:  # GERENCIAR QUESTÕES
-                                return {"action": "manage_questions"}
-                            elif i == 2:  # GERENCIAR TURMAS
+                            if i == 0:  # Gerenciar Turma
                                 return {"action": "manage_classes"}
-                            elif i == 3:  # GERENCIAR USUÁRIOS (NOVO)
-                                return {"action": "manage_users"}
-                            elif i == 4:  # RANKING
+                            elif i == 1:  # Gerenciar Questão
+                                return {"action": "manage_questions"}
+                            elif i == 2:  # Visualizar Ranking
                                 return {"action": "show_ranking"}
-                            elif i == 5:  # SAIR
+                            elif i == 3:  # JOGAR
+                                return {"action": "play_game"}
+                            elif i == 4:  # SAIR
                                 return {"action": "logout"}
         
         return {"action": "none"}
@@ -262,16 +245,18 @@ class MenuScreen:
     def draw(self):
         self.screen.fill(self.warning_color)
         self.main_panel.draw(self.screen) #painel principal
-        # titulo:
-        title_text = self.title_font.render("PoliGame Show", True, (60, 60, 60))
+        
+        # Título conforme a imagem
+        title_text = self.title_font.render("Menu Principal", True, (60, 60, 60))
         title_rect = title_text.get_rect(center=(self.width // 2, 90))
         self.screen.blit(title_text, title_rect)
         
-        #info do usuário:
-        welcome_text = f"Bem-vindo {self.user_data['username']}  " + \
-              ("PoliMestre" if self.user_data["user_type"] == "teacher" else "PoliGamer")
-
-        user_text = self.text_font.render(welcome_text, True, (60, 60, 60))
+        # Mensagem de boas-vindas conforme a imagem
+        welcome_text = f"Bem-Vindo {self.user_data['username']}"
+        if self.user_data["user_type"] == "teacher":
+            welcome_text += " PoliMestre"
+            
+        user_text = self.subtitle_font.render(welcome_text, True, (60, 60, 60))
         user_rect = user_text.get_rect(center=(self.width // 2, 130))
         self.screen.blit(user_text, user_rect)
 

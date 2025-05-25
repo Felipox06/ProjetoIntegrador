@@ -1,6 +1,3 @@
-# screens/teacher/class_management_screen.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 from pygame.locals import *
@@ -12,15 +9,16 @@ try:
 except ImportError:
     print("Arquivo config.py não encontrado. Usando configurações padrão.")
     COLORS = {
-        "background": (235, 235, 240),
-        "light_shadow": (255, 255, 255),
-        "dark_shadow": (205, 205, 210),
-        "accent": (106, 130, 251),
-        "text": (60, 60, 60),
-        "success": (75, 181, 67),
-        "warning": (232, 181, 12),
-        "error": (232, 77, 77)
-    }
+    "background": (235, 235, 240),
+    "light_shadow": (255, 255, 255),
+    "dark_shadow": (205, 205, 210),
+    "accent": (27, 185, 185),
+    "text": (0, 0, 0),
+    "success": (75, 181, 67),
+    "warning": (251, 164, 31),
+    "error": (232, 77, 77),
+    "black": (0, 0, 0),
+}
 
 # Classes para elementos de UI neumórficos
 class NeumorphicPanel:
@@ -34,14 +32,10 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+
+         # Desenhar borda preta fina
+        pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=self.border_radius)
+
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -84,14 +78,8 @@ class NeumorphicButton:
         else:
             # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-            
+            # Borda preta fina ao redor do botão
+            pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=10)
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
@@ -103,8 +91,9 @@ class ClassManagementScreen:
         self.user_data = user_data  # Contém user_type (teacher) e username
         self.center_x = self.width // 2  # Salvar center_x como atributo da classe
         
-        # Cores do design neumorfista
+        # Cores 
         self.bg_color = COLORS["background"]
+        self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
@@ -124,15 +113,7 @@ class ClassManagementScreen:
         self.main_panel = NeumorphicPanel(
             center_x - 350, 50, 
             700, 500, 
-            self.bg_color, self.light_shadow, self.dark_shadow
-        )
-        
-        # Painel de opções de gerenciamento
-        self.options_panel = NeumorphicPanel(
-            center_x - 300, 150, 
-            600, 280, 
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            border_radius=15
+            self.accent_color, self.light_shadow, self.dark_shadow
         )
         
         # Botões de ações para turmas
@@ -142,19 +123,18 @@ class ClassManagementScreen:
         
         # Botão CRIAR
         self.create_button = NeumorphicButton(
-            center_x - btn_width//2, 180,
-            btn_width, btn_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            COLORS.get("success", (75, 181, 67)),  # Verde para criar
-            "CRIAR NOVA TURMA", self.subtitle_font
-        )
-        
+        center_x - btn_width//2, 180,
+        btn_width, btn_height,
+        self.warning_color, self.light_shadow, self.dark_shadow,
+        self.accent_color, 
+        "CRIAR NOVA TURMA", self.subtitle_font)
+
         # Botão EDITAR
         self.edit_button = NeumorphicButton(
             center_x - btn_width//2, 180 + btn_height + btn_spacing,
             btn_width, btn_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color,  # Azul para editar
+            self.warning_color, self.light_shadow, self.dark_shadow,
+            self.accent_color, 
             "EDITAR TURMA EXISTENTE", self.subtitle_font
         )
         
@@ -162,7 +142,7 @@ class ClassManagementScreen:
         self.remove_button = NeumorphicButton(
             center_x - btn_width//2, 180 + 2 * (btn_height + btn_spacing),
             btn_width, btn_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             COLORS.get("error", (232, 77, 77)),  # Vermelho para remover
             "REMOVER TURMA", self.subtitle_font
         )
@@ -171,7 +151,7 @@ class ClassManagementScreen:
         self.back_button = NeumorphicButton(
             center_x - 75, 470,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de voltar
             "VOLTAR", self.text_font
         )
@@ -225,9 +205,6 @@ class ClassManagementScreen:
         title_text = self.title_font.render("Gerenciamento de Turmas", True, (60, 60, 60))
         title_rect = title_text.get_rect(center=(self.center_x, 90))
         self.screen.blit(title_text, title_rect)
-        
-        # Desenha o painel de opções
-        self.options_panel.draw(self.screen)
         
         # Desenha os botões de ações
         self.create_button.draw(self.screen)
