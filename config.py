@@ -7,11 +7,12 @@ COLORS = {
     "background": (235, 235, 240),
     "light_shadow": (255, 255, 255),
     "dark_shadow": (205, 205, 210),
-    "accent": (106, 130, 251),
+    "accent": (27, 185, 185),
     "text": (60, 60, 60),
     "success": (75, 181, 67),
-    "warning": (232, 181, 12),
+    "warning": (251, 164, 31),
     "error": (232, 77, 77),
+    "black": (0, 0, 0),
 }
 
 # Configuracoes de jogo

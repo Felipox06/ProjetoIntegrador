@@ -1,6 +1,3 @@
-# screens/teacher/question_editor.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 from pygame.locals import *
@@ -68,14 +65,8 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+    # Adicionar borda preta fina ao redor do painel
+        pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=self.border_radius)
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -118,14 +109,10 @@ class NeumorphicButton:
         else:
             # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-            
+
+            # Desenhar contorno preto fino
+            pygame.draw.rect(surface, (0, 0, 0), self.rect, width=1, border_radius=10)
+
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
@@ -453,7 +440,7 @@ class QuestionEditor:
         
         # Botão CANCELAR à esquerda
         self.cancel_button = NeumorphicButton(
-            center_x - button_width - 20, button_y,
+            center_x - button_width - 20, button_y - -25,
             button_width, button_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
             COLORS.get("error", (232, 77, 77)), "CANCELAR", self.subtitle_font
@@ -461,7 +448,7 @@ class QuestionEditor:
         
         # Botão SALVAR à direita
         self.save_button = NeumorphicButton(
-            center_x + 20, button_y,
+            center_x + 20, button_y - -25,
             button_width, button_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.success_color, "SALVAR", self.subtitle_font
@@ -773,8 +760,8 @@ class QuestionEditor:
         options_rect = options_text.get_rect(topleft=(self.option_inputs[0].rect.x, self.option_inputs[0].rect.y - 30))
         self.screen.blit(options_text, options_rect)
         
-        correct_text = self.subtitle_font.render("Correta", True, (60, 60, 60))
-        correct_rect = correct_text.get_rect(topleft=(self.correct_option_buttons[0].rect.x - 15, self.option_inputs[0].rect.y - 30))
+        correct_text = self.subtitle_font.render("", True, (60, 60, 60))
+        correct_rect = correct_text.get_rect(topleft=(self.correct_option_buttons[0].rect.x - 15, self.option_inputs[0].rect.y - 10))
         correct_rect.centerx = self.correct_option_buttons[0].rect.centerx
         self.screen.blit(correct_text, correct_rect)
         

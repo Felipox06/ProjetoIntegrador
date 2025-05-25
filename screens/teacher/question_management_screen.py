@@ -1,6 +1,3 @@
-# screens/teacher/question_management_screen.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 from pygame.locals import *
@@ -15,11 +12,12 @@ except ImportError:
         "background": (235, 235, 240),
         "light_shadow": (255, 255, 255),
         "dark_shadow": (205, 205, 210),
-        "accent": (106, 130, 251),
-        "text": (60, 60, 60),
+        "accent": (27, 185, 185),
+        "text": (0, 0, 0),
         "success": (75, 181, 67),
-        "warning": (232, 181, 12),
-        "error": (232, 77, 77)
+        "warning": (251, 164, 31),
+        "error": (232, 77, 77),
+        "black": (0, 0, 0),
     }
 
 # Classes para elementos de UI neumórficos
@@ -30,18 +28,17 @@ class NeumorphicPanel:
         self.light_shadow = light_shadow
         self.dark_shadow = dark_shadow
         self.border_radius = border_radius
+
+        self.bg_color = COLORS["background"]
+        self.warning_color = COLORS["warning"]
+        self.light_shadow = COLORS["light_shadow"]
+        self.dark_shadow = COLORS["dark_shadow"]
+        self.accent_color = COLORS["accent"]
     
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -82,16 +79,12 @@ class NeumorphicButton:
             text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
             surface.blit(self.text_surf, text_rect)
         else:
-            # Estado normal: efeito neumórfico
+            # Borda preta externa
+            pygame.draw.rect(surface, (0, 0, 0), self.rect.inflate(4, 4), border_radius=12)
+
+            # Botão em si
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-            
+
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
@@ -104,10 +97,11 @@ class QuestionManagementScreen:
         
         # Cores do design neumorfista
         self.bg_color = COLORS["background"]
+        self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
-        
+
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
         self.subtitle_font = pygame.font.SysFont('Arial', 24, bold=True)
@@ -123,14 +117,14 @@ class QuestionManagementScreen:
         self.main_panel = NeumorphicPanel(
             center_x - 350, 50, 
             700, 500, 
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.accent_color, self.light_shadow, self.dark_shadow
         )
         
         # Painel de opções de gerenciamento
         self.options_panel = NeumorphicPanel(
             center_x - 300, 150, 
             600, 280, 
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             border_radius=15
         )
         
@@ -143,7 +137,7 @@ class QuestionManagementScreen:
         self.create_button = NeumorphicButton(
             center_x - btn_width//2, 180,
             btn_width, btn_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             COLORS.get("success", (75, 181, 67)),  # Verde para criar
             "CRIAR NOVA QUESTÃO", self.subtitle_font
         )
@@ -152,7 +146,7 @@ class QuestionManagementScreen:
         self.edit_button = NeumorphicButton(
             center_x - btn_width//2, 180 + btn_height + btn_spacing,
             btn_width, btn_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             self.accent_color,  # Azul para editar
             "EDITAR QUESTÃO EXISTENTE", self.subtitle_font
         )
@@ -161,7 +155,7 @@ class QuestionManagementScreen:
         self.remove_button = NeumorphicButton(
             center_x - btn_width//2, 180 + 2 * (btn_height + btn_spacing),
             btn_width, btn_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             COLORS.get("error", (232, 77, 77)),  # Vermelho para remover
             "REMOVER QUESTÃO", self.subtitle_font
         )
@@ -170,7 +164,7 @@ class QuestionManagementScreen:
         self.back_button = NeumorphicButton(
             center_x - 75, 470,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de voltar
             "VOLTAR", self.text_font
         )
@@ -215,8 +209,17 @@ class QuestionManagementScreen:
     
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
-        
+        self.screen.fill(self.warning_color)
+        # Caixa ao redor de todos os elementos (borda preta)
+        margin = 40
+        pygame.draw.rect(
+            self.screen, 
+            (0, 0, 0), 
+        pygame.Rect(margin, margin, self.width - 2 * margin, self.height - 2 * margin),
+        width=3,  # Espessura da borda
+        border_radius=25
+)
+       
         # Desenha o painel principal
         self.main_panel.draw(self.screen)
         

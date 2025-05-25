@@ -1,75 +1,50 @@
-# screens/login_screen.py
-
 import pygame
 import sys
 import os
 from pygame.locals import *
+pygame.init()
 
-# Importe direto do config no mesmo diretório
+# importe do config:
 try:
     import config
 except ImportError:
-    # Definições padrão caso o arquivo config.py não exista
     class Config:
         def __init__(self):
-            
             self.COLORS = {
-                "background": (235, 235, 240),
-                "light_shadow": (255, 255, 255),
-                "dark_shadow": (205, 205, 210),
-                "accent": (106, 130, 251),
-                "text": (60, 60, 60)
-            }
+               "background": (30, 180, 195),     
+                "light_shadow": (255, 255, 255), 
+                "dark_shadow": (20, 140, 150),    
+                "accent": (27, 185, 185),    
+                "text": (0, 0, 0),
+                "warning": (251, 164, 31),
+                "black": (0, 0, 0)}       
             try:
-              print("Carregando tela de fundo")
-              bg_path = os.path.join("assets", "images", "background.png")
-              self.background = pygame.image.load(bg_path).convert()
-                 # Redimensionar se necessário para caber na tela
-              if self.background.get_size() != (self.width, self.height):
-                  self.background = pygame.transform.scale(self.background, (self.width, self.height))
-            except (pygame.error, FileNotFoundError) as e:
-                   print(f"Aviso: Não foi possível carregar o background: {e}")
-                   self.background = None
-                   
-            try:
-        # Caminho absoluto ou relativo determinado pelo seu projeto
-              font_path = os.path.join("assets", "fonts", "pixel_font.ttf")
-              self.title_font = pygame.font.Font(font_path, 36)
-              self.text_font = pygame.font.Font(font_path, 18)
+                # Caminho absoluto ou relativo determinado pelo seu projeto
+                font_path = os.path.join("assets", "fonts", "pixel_font.ttf")
+                self.title_font = pygame.font.Font(font_path, 36)
+                self.text_font = pygame.font.Font(font_path, 18)
             except FileNotFoundError:
-        # Fallback para fontes do sistema caso não encontre as pixeladas
+                # Fallback para fontes do sistema caso não encontre as pixeladas
                 print("Aviso: Fonte pixelada não encontrada. Usando fontes do sistema.")
                 self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
                 self.text_font = pygame.font.SysFont('Arial', 18)
     config = Config()
 
-class NeumorphicPanel:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
+class SimplePanel:
+    def __init__(self, x, y, width, height, bg_color, border_radius=20):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.border_radius = border_radius
     
     def draw(self, surface):
-        # Desenhar retângulo principal com bordas arredondadas
+        # Desenhar retângulo principal com bordas arredondadas e contorno preto fino
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+        pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=self.border_radius, width=1)
 
-class NeumorphicButton:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 accent_color, text, font, is_toggle=False, is_active=False):
+class SimpleButton:
+    def __init__(self, x, y, width, height, bg_color, accent_color, text, font, is_toggle=False, is_active=False):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.accent_color = accent_color
         self.text = text
         self.font = font
@@ -78,7 +53,7 @@ class NeumorphicButton:
         self.pressed = False
         
         # Preparar superfície de texto
-        self.text_surf = font.render(text, True, (50, 50, 50))
+        self.text_surf = font.render(text, True, config.COLORS["text"])
         self.text_rect = self.text_surf.get_rect(center=self.rect.center)
     
     def is_clicked(self, pos):
@@ -89,46 +64,30 @@ class NeumorphicButton:
         is_pressed = self.pressed or (self.is_toggle and self.is_active)
         
         if is_pressed:
-            # Estado pressionado: inverter sombras e aplicar cor de destaque
-            pygame.draw.rect(surface, self.bg_color, 
-                           pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
-                           border_radius=10)
+            # Estado pressionado: cor de destaque e contorno mais espesso
+            pygame.draw.rect(surface, self.accent_color, self.rect, border_radius=10)
+            pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=10, width=2)
             
-            # Borda com cor de destaque
-            pygame.draw.rect(surface, self.accent_color, 
-                           self.rect, border_radius=10, width=2)
-            
-            # Deslocar o texto ligeiramente
-            text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
-            surface.blit(self.text_surf, text_rect)
+            # Texto em branco para contraste
+            pressed_text = self.font.render(self.text, True, (255, 255, 255))
+            surface.blit(pressed_text, self.text_rect)
         else:
-            # Estado normal: efeito neumórfico
+            # Estado normal: contorno preto fino
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
+            pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=10, width=1)
             
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
-class NeumorphicInput:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 placeholder, font, is_password=False):
+class SimpleInput:
+    def __init__(self, x, y, width, height, bg_color, placeholder, font, is_password=False):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.placeholder = placeholder
         self.font = font
         self.is_password = is_password
         self.text = ""
         self.active = False
-        
-        # Cursor piscante
         self.cursor_visible = True
         self.cursor_timer = 0
     
@@ -136,21 +95,13 @@ class NeumorphicInput:
         return self.rect.collidepoint(pos)
     
     def draw(self, surface):
-        # Desenhar o fundo do input (invertido do normal para parecer afundado)
-        pygame.draw.rect(surface, self.bg_color, 
-                       pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
-                       border_radius=10)
+        # Desenhar o fundo do input com contorno preto fino
+        pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
+        pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=10, width=1)
         
-        # Desenhar sombras internas (invertidas)
-        shadow_rect_dark = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-        
-        shadow_rect_light = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-        
-        # Desenhar linha de destaque se ativo
+        # Linha de destaque se ativo (em azul)
         if self.active:
-            pygame.draw.line(surface, (120, 120, 255), 
+            pygame.draw.line(surface, (0, 100, 255), 
                            (self.rect.x + 15, self.rect.y + self.rect.height - 8),
                            (self.rect.x + self.rect.width - 15, self.rect.y + self.rect.height - 8),
                            2)
@@ -162,28 +113,23 @@ class NeumorphicInput:
             else:
                 displayed_text = self.text
             
-            text_surface = self.font.render(displayed_text, True, (50, 50, 50))
+            text_surface = self.font.render(displayed_text, True, config.COLORS["text"])
         else:
-            text_surface = self.font.render(self.placeholder, True, (150, 150, 150))
+            text_surface = self.font.render(self.placeholder, True, (100, 100, 100))
         
         text_rect = text_surface.get_rect(midleft=(self.rect.x + 15, self.rect.y + self.rect.height // 2))
         surface.blit(text_surface, text_rect)
         
         # Desenhar cursor piscante se ativo
         if self.active:
-            # Atualizar timer do cursor
             self.cursor_timer += 1
-            if self.cursor_timer >= 30:  # piscar a cada 30 frames (aproximadamente 0.5s em 60fps)
+            if self.cursor_timer >= 30:
                 self.cursor_visible = not self.cursor_visible
                 self.cursor_timer = 0
             
             if self.cursor_visible:
-                if self.is_password:
-                    cursor_x = text_rect.right + 2
-                else:
-                    cursor_x = text_rect.right + 2
-                
-                pygame.draw.line(surface, (50, 50, 50),
+                cursor_x = text_rect.right + 2
+                pygame.draw.line(surface, config.COLORS["text"],
                                (cursor_x, self.rect.y + 15),
                                (cursor_x, self.rect.y + self.rect.height - 15),
                                2)
@@ -194,92 +140,74 @@ class LoginScreen:
         self.running = True
         self.width, self.height = screen.get_size()
         
-        # Cores do design neumorfista
+        # Cores
         self.bg_color = config.COLORS["background"]
-        self.light_shadow = config.COLORS["light_shadow"]
-        self.dark_shadow = config.COLORS["dark_shadow"]
         self.accent_color = config.COLORS["accent"]
-        
-        # Carregar imagem de fundo
-        self.background = None
-        try:
-            print("Carregando tela de fundo")
-            bg_path = os.path.join("assets", "images", "background.png")
-            self.background = pygame.image.load(bg_path).convert()
-            # Redimensionar se necessário para caber na tela
-            if self.background.get_size() != (self.width, self.height):
-                self.background = pygame.transform.scale(self.background, (self.width, self.height))
-        except (pygame.error, FileNotFoundError) as e:
-            print(f"Aviso: Não foi possível carregar o background: {e}")
-            self.background = None
         
         # Tentar carregar fontes personalizadas
         try:
-            # Caminho absoluto ou relativo determinado pelo seu projeto
             font_path = os.path.join("assets", "fonts", "pixel_font.ttf")
-            self.title_font = pygame.font.Font(font_path, 36)
+            self.title_font = pygame.font.Font(font_path, 70)
             self.text_font = pygame.font.Font(font_path, 18)
         except FileNotFoundError:
-            # Fallback para fontes do sistema caso não encontre as pixeladas
             print("Aviso: Fonte pixelada não encontrada. Usando fontes do sistema.")
             self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
             self.text_font = pygame.font.SysFont('Arial', 18)
         
-        # Resto do código de inicialização permanece o mesmo...
-        
-        # Criar elementos de UI
+        # Criar elementos de UI (posicionados mais para cima)
         center_x = self.width // 2
+        vertical_offset = -50  # Move tudo para cima
         
         # Painel principal
-        self.main_panel = NeumorphicPanel(
-            center_x - 200, 150, 
+        self.main_panel = SimplePanel(
+            center_x - 200, 100 + vertical_offset, 
             400, 450, 
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.bg_color
         )
         
         # Campos de entrada
-        self.username_input = NeumorphicInput(
-            center_x - 150, 280,
+        self.username_input = SimpleInput(
+            center_x - 150, 230 + vertical_offset,
             300, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            "Usuário", self.text_font
+            self.bg_color,
+            "RA do Aluno", self.text_font
         )
         
-        self.password_input = NeumorphicInput(
-            center_x - 150, 350,
+        self.password_input = SimpleInput(
+            center_x - 150, 300 + vertical_offset,
             300, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.bg_color,
             "Senha", self.text_font,
             is_password=True
         )
         
         # Botões
-        self.login_button = NeumorphicButton(
-            center_x - 150, 430,
+        self.login_button = SimpleButton(
+            center_x - 150, 380 + vertical_offset,
             300, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "ENTRAR", self.text_font
+            self.bg_color, self.accent_color, 
+            "ENTRAR", self.text_font
         )
         
         self.user_type = "student"  # Padrão: aluno
         
         # Botões de seleção de tipo de usuário
-        self.student_button = NeumorphicButton(
-            center_x - 150, 500,
+        self.student_button = SimpleButton(
+            center_x - 150, 450 + vertical_offset,
             140, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "Aluno", self.text_font,
+            self.bg_color, self.accent_color,
+            "Aluno", self.text_font,
             is_toggle=True, is_active=True
         )
         
-        self.teacher_button = NeumorphicButton(
-            center_x + 10, 500,
+        self.teacher_button = SimpleButton(
+            center_x + 10, 450 + vertical_offset,
             140, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            self.accent_color, "Professor", self.text_font,
+            self.bg_color, self.accent_color,
+            "Professor", self.text_font,
             is_toggle=True, is_active=False
         )
-        
+    
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -289,7 +217,6 @@ class LoginScreen:
             if event.type == MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 
-                # Verificar interações com os elementos
                 if self.username_input.is_clicked(mouse_pos):
                     self.username_input.active = True
                     self.password_input.active = False
@@ -298,19 +225,13 @@ class LoginScreen:
                     self.username_input.active = False
                     self.password_input.active = True
                 
-                # Verificar se o botão de login foi clicado
                 elif self.login_button.is_clicked(mouse_pos):
                     self.login_button.pressed = True
-                    
-                    # Simulação de login (fase de teste)
                     username = self.username_input.text
                     password = self.password_input.text
-                    
-                    # Nesta fase de testes, qualquer entrada é válida
                     self.running = False
                     return {"action": "login_success", "user_type": self.user_type, "username": username}
                 
-                # Verificar botões de seleção de tipo de usuário
                 elif self.student_button.is_clicked(mouse_pos):
                     self.student_button.is_active = True
                     self.teacher_button.is_active = False
@@ -342,57 +263,64 @@ class LoginScreen:
                     self.login_button.pressed = True
                     username = self.username_input.text
                     password = self.password_input.text
-                    
-                    # Nesta fase de testes, qualquer entrada é válida
                     self.running = False
                     return {"action": "login_success", "user_type": self.user_type, "username": username}
         
         return {"action": "none"}
     
     def update(self):
-        # Lógica de atualização (se necessário)
         if self.login_button.pressed:
             self.login_button.pressed = False
-    
+
     def draw(self):
-        # Desenha o background
-        if self.background:
-            self.screen.blit(self.background, (0, 0))
-        else:
-            # Fallback para a cor de fundo original
-            self.screen.fill(self.bg_color)
-    
-    # Resto do código de desenho existente...
-        # Desenha o título
-        title_text = self.title_font.render("Quiz do Milhão", True, (60, 60, 60))
-        title_rect = title_text.get_rect(center=(self.width // 2, 200))
+        self.screen.fill(self.bg_color)
+
+        # Caixa amarela (accent) atrás do painel principal para destaque
+        accent_rect = pygame.Rect(
+            self.main_panel.rect.x - 10, 
+            self.main_panel.rect.y - 10, 
+            self.main_panel.rect.width + 20, 
+            self.main_panel.rect.height + 20
+        )
+        pygame.draw.rect(self.screen, self.accent_color, accent_rect, border_radius=25)
+        
+        # Painel principal (sobre a caixa amarela)
+        self.main_panel.draw(self.screen)
+        
+        # titulo:
+        title_text = self.title_font.render("PoliGame Show", True, config.COLORS["text"])
+        title_rect = title_text.get_rect(center=(self.width // 2, 100))
         self.screen.blit(title_text, title_rect)
         
-        # Desenha os campos de entrada
+        # botoes e inputs
         self.username_input.draw(self.screen)
         self.password_input.draw(self.screen)
-        
-        # Desenha os botões
         self.login_button.draw(self.screen)
         self.student_button.draw(self.screen)
         self.teacher_button.draw(self.screen)
-        
-        # Desenha texto explicativo
-        type_text = self.text_font.render("Selecione seu tipo de usuário:", True, (60, 60, 60))
-        type_rect = type_text.get_rect(center=(self.width // 2, 480))
-        self.screen.blit(type_text, type_rect)
-        
-        # Atualiza a tela
-        pygame.display.flip()
     
     def run(self):
+        clock = pygame.time.Clock()
+        result = {"action": "none"}
+        
         while self.running:
             result = self.handle_events()
-            if result["action"] == "login_success":
-                return result
             self.update()
             self.draw()
-            pygame.time.Clock().tick(60)
+            pygame.display.flip()
+            clock.tick(60)
         
-        # Retorno no caso de sair do loop por outros meios
-        return {"action": "exit"}
+        return result
+
+def main():
+    screen = pygame.display.set_mode((800, 700))
+    pygame.display.set_caption("Login Screen Example")
+    
+    login_screen = LoginScreen(screen)
+    result = login_screen.run()
+    
+    print("Resultado do login:", result)
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()

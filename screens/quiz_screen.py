@@ -1,6 +1,3 @@
-# screens/quiz_screen.py
-# -*- coding: utf-8 -*-
-
 import pygame
 import sys
 import random
@@ -16,16 +13,18 @@ try:
 except (ImportError, AttributeError):
     COLORS = {
         "background": (235, 235, 240),
-        "light_shadow": (255, 255, 255),
-        "dark_shadow": (205, 205, 210),
-        "accent": (106, 130, 251),
-        "text": (60, 60, 60),
-        "success": (75, 181, 67),
-        "warning": (232, 181, 12),
-        "error": (232, 77, 77)
-    }
-    CHECKPOINT_INTERVALS = 5
-    TOTAL_QUESTIONS = 15
+    "light_shadow": (255, 255, 255),
+    "dark_shadow": (205, 205, 210),
+    "accent": (27, 185, 185),
+    "text": (60, 60, 60),
+    "success": (75, 181, 67),
+    "warning": (251, 164, 31),
+    "error": (232, 77, 77),
+    "black": (0, 0, 0),
+}
+    
+CHECKPOINT_INTERVALS = 5
+TOTAL_QUESTIONS = 15
 
 # Componentes de UI neumórficos
 class NeumorphicPanel:
