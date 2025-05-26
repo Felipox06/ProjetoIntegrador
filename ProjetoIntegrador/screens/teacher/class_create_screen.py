@@ -4,6 +4,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.db_connector import getConnection
+from databse.data_manager import adicionar_turma_db
 
 # Importar config se existir
 try:
@@ -309,41 +311,55 @@ class ClassCreateScreen:
         return True, "Formulário válido"
     
     def prepare_class_data(self):
-        """Preparar dados da turma para salvar no banco de dados"""
+        # Preparar dados da turma para salvar no banco de dados
         class_data = {
             "name": self.class_name_input.text.strip(),
             "grade": self.selected_grade,
             "shift": self.selected_shift,
             "year": int(self.year_input.text),
-            "teacher": self.user_data["username"]  # Professor que criou a turma
         }
         return class_data
     
     def save_class(self):
-        """Salvar a turma no banco de dados (simulação)"""
+        # Salvar a turma no banco de dados
         is_valid, message = self.validate_form()
         if not is_valid:
-            # Mostrar mensagem de erro
             self.error_message = message
-            self.message_timer = 180  # 3 segundos a 60 FPS
-            print(f"Erro ao salvar: {message}")
+            self.message_timer = 180
+            print(f"Erro de validação ao salvar turma: {message}")
+            return False # Retorna False em caso de falha na validação
+        
+        # Preparar dados da turma (método prepare_class_data)
+        class_data = self.prepare_class_data() # Lembre-se que você chamou de class_data
+        
+        # Chamada ao Banco
+        try:
+            
+            sucesso_db, mensagem_db = adicionar_turma_db(class_data, getConnection) # <--- Adapte 'getConnection'
+
+        except NameError as ne:
+            self.error_message = f"Erro de configuração no código: {ne}"
+            self.message_timer = 180
+            print(self.error_message)
             return False
-        
-        # Preparar dados da turma
-        class_data = self.prepare_class_data()
-        
-        # Simulação de salvamento (para futura integração com o banco de dados)
-        # Na implementação real, aqui seria a chamada ao modelo para salvar no banco
-        print(f"Turma salva com sucesso: {class_data}")
-        
-        # Exibir mensagem de sucesso
-        self.success_message = "Turma criada com sucesso!"
-        self.message_timer = 120  # 2 segundos a 60 FPS
-        
-        # Limpar o formulário após salvar
-        self.clear_form()
-        
-        return True
+        except Exception as e:
+            self.error_message = f"Erro inesperado no sistema ao salvar turma: {e}"
+            self.message_timer = 180
+            print(self.error_message)
+            return False
+
+        # Processar o resultado da operação no banco de dados
+        if sucesso_db:
+            self.success_message = mensagem_db
+            self.message_timer = 120
+            # self.clear_form_turma() # Você precisará de um método para limpar o formulário de turmas
+            print(f"Sucesso no DB: {mensagem_db}")
+            return True
+        else:
+            self.error_message = mensagem_db
+            self.message_timer = 180
+            print(f"Erro no DB: {mensagem_db}")
+            return False
     
     def clear_form(self):
         """Limpar todos os campos do formulário"""

@@ -1,6 +1,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import adicionar_questao_db
+from databse.db_connector import getConnection
 
 # Matérias e séries padrão sem acentos
 DEFAULT_SUBJECTS = [
@@ -497,7 +499,7 @@ class QuestionEditor:
         return True, "Formulário válido"
     
     def prepare_question_data(self):
-        """Preparar dados da questão para salvar no banco de dados"""
+        # Preparar dados da questão para salvar no banco de dados
         question_data = {
             "subject": self.selected_subject,
             "grade": self.selected_grade,
@@ -510,7 +512,7 @@ class QuestionEditor:
         return question_data
     
     def save_question(self):
-        """Salvar a questão no banco de dados (simulação)"""
+        # Salvar a questão no banco de dados (simulação)
         is_valid, message = self.validate_form()
         if not is_valid:
             # Mostrar mensagem de erro
@@ -518,22 +520,37 @@ class QuestionEditor:
             self.message_timer = 180  # 3 segundos a 60 FPS
             print(f"Erro ao salvar: {message}")
             return False
-        
-        # Preparar dados da questão
         question_data = self.prepare_question_data()
         
-        # Simulação de salvamento (para futura integração com o banco de dados)
-        # Na implementação real, aqui seria a chamada ao modelo para salvar no banco
-        print(f"Questão salva com sucesso: {question_data}")
-        
-        # Exibir mensagem de sucesso
-        self.success_message = "Questão salva com sucesso!"
-        self.message_timer = 120  # 2 segundos a 60 FPS
-        
-        # Limpar o formulário após salvar
-        self.clear_form()
-        
-        return True
+        try:
+            sucesso_db, mensagem_db = adicionar_questao_db(question_data, getConnection)
+
+        except NameError as ne:
+            # Isso pode acontecer se adicionar_questao_db ou a função de conexão não forem encontradas
+            self.error_message = f"Erro de configuração: {ne}"
+            self.message_timer = 180
+            print(self.error_message)
+            return False
+        except Exception as e:
+            # Captura outros erros inesperados na chamada
+            self.error_message = f"Erro inesperado no sistema: {e}"
+            self.message_timer = 180
+            print(self.error_message)
+            return False
+
+        # Processar o resultado da operação no banco de dados
+        if sucesso_db:
+            self.success_message = mensagem_db # Usa a mensagem retornada pela função do DB
+            self.message_timer = 120  # 2 segundos a 60 FPS
+            self.clear_form() # Limpa o formulário apenas em caso de sucesso
+            print(f"Sucesso no DB: {mensagem_db}") # Log para o console
+            return True
+        else:
+            self.error_message = mensagem_db # Usa a mensagem de erro retornada
+            self.message_timer = 180  # 3 segundos a 60 FPS
+            print(f"Erro no DB: {mensagem_db}") # Log para o console
+            return False
+          
     
     def clear_form(self):
         """Limpar todos os campos do formulário"""
