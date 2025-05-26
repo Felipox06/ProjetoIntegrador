@@ -4,6 +4,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import add_user_to_database
+from databse.db_connector import getConnection
 
 # Importar config se existir
 try:
@@ -335,7 +337,24 @@ class AddUserScreen:
         return True, "Formulario valido"
     
     def save_user(self):
-        """Simula salvamento do usuário (preparado para integração com banco)"""
+        # Coleta dados do formulário do usuário, valida minimamente, e tenta salvar o novo usuário no banco de dados.
+        ra_text = self.ra_input.text.strip()
+        nome_text = self.nome_input.text.strip()
+        senha_text = self.senha_input.text # Lembre-se do ALERTA DE SEGURANÇA sobre hashing!
+
+
+        if not ra_text:
+            # self.show_message("Erro", "O campo RA não pode estar vazio.") # Exemplo de feedback
+            return False, "O campo RA não pode estar vazio."
+        if not nome_text:
+            # self.show_message("Erro", "O campo Nome não pode estar vazio.")
+            return False, "O campo Nome não pode estar vazio."
+        if not senha_text: # A senha não deve estar vazia
+            # self.show_message("Erro", "O campo Senha não pode estar vazio.")
+            return False, "O campo Senha não pode estar vazio."
+        if not self.selected_user_type:
+            # self.show_message("Erro", "Por favor, selecione o Tipo de Usuário.")
+            return False, "Nenhum tipo de usuário selecionado."
         # Preparar dados do usuário
         user_data = {
             "RA": int(self.ra_input.text),
@@ -343,35 +362,53 @@ class AddUserScreen:
             "senha": self.senha_input.text,
             "tipo": self.selected_user_type
         }
-        
+       
         # Adicionar dados específicos do tipo
+        user_data = {
+            "RA": ra_text,
+            "nome": nome_text,
+            "senha": senha_text,
+            "tipo": self.selected_user_type
+        }
+
+
         if self.selected_user_type == "Aluno":
-            user_data["serie"] = self.selected_serie
-            user_data["classe"] = self.selected_classe
+            if not self.selected_serie or not self.selected_classe:
+                # self.show_message("Erro", "Série e Classe devem ser selecionados para Aluno.")
+                return False, "Série e Classe devem ser selecionados para Aluno."
             user_data["turma"] = f"{self.selected_serie} {self.selected_classe}"
-        else:
+            # Os campos "serie" e "classe" não são mais adicionados individualmente a user_data
+            # pois a função add_user_to_database espera apenas "turma" para Aluno.
+        elif self.selected_user_type == "Professor":
+            if not self.selected_materia:
+                # self.show_message("Erro", "Matéria deve ser selecionada para Professor.")
+                return False, "Matéria deve ser selecionada para Professor."
             user_data["materia"] = self.selected_materia
-        
-        # SIMULAÇÃO - Em produção, aqui faria a inserção no banco
-        print("=== DADOS PARA INSERIR NO BANCO ===")
-        print(f"RA: {user_data['RA']}")
-        print(f"Nome: {user_data['nome']}")
-        print(f"Senha: {user_data['senha']}")
-        print(f"Tipo: {user_data['tipo']}")
-        
-        if user_data['tipo'] == 'Aluno':
-            print(f"Serie: {user_data['serie']}")
-            print(f"Classe: {user_data['classe']}")
-            print(f"Turma: {user_data['turma']}")
         else:
-            print(f"Materia: {user_data['materia']}")
-        
-        print("=====================================")
-        
-        # Simular inserção bem-sucedida
-        self.existing_ras.append(user_data['RA'])  # Adicionar à lista de RAs existentes
-        
-        return True, f"Usuario {user_data['nome']} cadastrado com sucesso!"
+            # Esta condição é redundante se a validação de selected_user_type acima for suficiente.
+            # self.show_message("Erro", f"Tipo de usuário desconhecido: {self.selected_user_type}")
+            return False, f"Tipo de usuário desconhecido: {self.selected_user_type}"
+       
+        # --- CHAMADA PARA A FUNÇÃO DE BANCO DE DADOS ---
+        # A simulação e os prints foram removidos.
+        # A linha self.existing_ras.append() também foi removida.
+       
+        # Chame a função add_user_to_database, passando os dados do usuário
+        # e a sua função/método que retorna uma conexão com o banco.
+        # Adapte 'self.get_database_connection' para o nome real do seu método/função.
+        sucesso, mensagem = add_user_to_database(user_data, getConnection)
+       
+        if sucesso:
+            # self.show_message("Sucesso", mensagem) # Exemplo de feedback positivo
+            # Limpar campos do formulário, atualizar UI, etc.
+            # self.clear_form_fields()
+            pass # Adicione sua lógica pós-sucesso aqui
+        else:
+            # self.show_message("Erro de Cadastro", mensagem) # Exemplo de feedback de erro
+            pass # Adicione sua lógica pós-falha aqui
+
+
+        return sucesso, mensagem
     
     def clear_form(self):
         """Limpa todos os campos do formulário"""
