@@ -454,7 +454,7 @@ def search_all_users_from_db(get_connection_func):
     connection = None
     cursor = None
 
-    # Nomes das tabelas e colunas - AJUSTE CONFORME SEU BANCO DE DADOS!
+    # Nomes das tabelas e colunas
     # Tabela Alunos
     table_alunos = "alunos"
     col_aluno_ra = "aluno_RA"
@@ -466,7 +466,7 @@ def search_all_users_from_db(get_connection_func):
     table_professores = "professores"
     col_prof_ra = "prof_RA"
     col_prof_nome = "nome_prof"
-    col_prof_materia = "matéria" # Coluna no DB (com acento)
+    col_prof_materia = "materia" 
     col_prof_senha = "senha_prof"
 
 
@@ -487,8 +487,6 @@ def search_all_users_from_db(get_connection_func):
             ra, nome, turma_completa, senha = aluno_row
             
             # Processar turma_completa para obter serie e classe
-            # Assume formato como "Xº Ano Y" (ex: "1º Ano A", "3º Ano B")
-            # Se o formato for diferente, esta lógica de split precisará de ajuste.
             partes_turma = turma_completa.split()
             serie_aluno = ""
             classe_aluno = ""
@@ -499,11 +497,6 @@ def search_all_users_from_db(get_connection_func):
             else: # Caso inesperado, usa a turma completa como série
                 serie_aluno = turma_completa
 
-            # Para corresponder ao seu mock "2 Ano" (sem "º"):
-            # Se a série extraída contiver "º", você pode normalizá-la:
-            # if "º" in serie_aluno:
-            #     serie_aluno = serie_aluno.replace("º", "") # Ex: "1º Ano" -> "1 Ano"
-            # Faça isso se a sua UI espera estritamente "X Ano".
 
             aluno_dict = {
                 "RA": ra,
@@ -516,10 +509,6 @@ def search_all_users_from_db(get_connection_func):
             all_users_list.append(aluno_dict)
 
         # Buscar Professores
-        # (Fechando e reabrindo cursor ou usando um novo cursor é uma boa prática entre queries
-        #  se houver muitos dados ou processamento, mas para duas simples pode não ser estritamente necessário)
-        # cursor.close() # Opcional aqui, será fechado no finally
-        # cursor = connection.cursor() # Opcional aqui
 
         sql_professores = f"SELECT {col_prof_ra}, {col_prof_nome}, {col_prof_materia}, {col_prof_senha} FROM {table_professores}"
         cursor.execute(sql_professores)

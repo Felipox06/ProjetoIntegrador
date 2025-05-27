@@ -225,8 +225,8 @@ class RemoveUserScreen:
 
         
         self.filtered_users = self.all_users.copy()
-        self.user_checkboxes = {}  # Dicionário para mapear RA -> checkbox
-        self.selected_users = []  # Lista de usuários selecionados para remoção
+        self.user_checkboxes = {}  
+        self.selected_users = []  
         
         self.setup_ui()
         self.create_checkboxes()
