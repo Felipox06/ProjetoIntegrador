@@ -4,6 +4,10 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import delete_class_from_db
+from databse.db_connector import getConnection
+import mysql.connector
+
 
 # Importar config se existir
 try:
@@ -319,95 +323,121 @@ class ClassRemoveScreen:
         )
         
     def load_classes(self):
-        """Função mockup para carregar turmas do banco"""
-        # No código real, faria uma consulta ao banco de dados
-        classes = [
-            {
-                "id": 1,
-                "name": "3º Ano A",
-                "grade": "3º Ano",
-                "shift": "Manhã",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 2,
-                "name": "2º Ano B",
-                "grade": "2º Ano",
-                "shift": "Tarde",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 3,
-                "name": "1º Ano C",
-                "grade": "1º Ano",
-                "shift": "Manhã",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 4,
-                "name": "3º Ano B",
-                "grade": "3º Ano",
-                "shift": "Noite",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 5,
-                "name": "2º Ano A",
-                "grade": "2º Ano",
-                "shift": "Manhã",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 6,
-                "name": "1º Ano A",
-                "grade": "1º Ano",
-                "shift": "Tarde",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 7,
-                "name": "3º Ano C",
-                "grade": "3º Ano",
-                "shift": "Noite",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 8,
-                "name": "2º Ano C",
-                "grade": "2º Ano",
-                "shift": "Noite",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-        ]
-        return classes
+        """
+        Carrega a lista de turmas do banco de dados.
+        """
+        loaded_classes = []
+        connection = None
+        cursor = None
+
+        # Nomes das colunas na sua tabela 'turmas'
+        # Ajuste se os nomes no seu banco forem diferentes
+        col_id = "id_turma"
+        col_name_identifier = "nome_turma"  # Ex: "A", "B" (o nome individual da turma)
+        col_grade = "serie_turma"    # Ex: "1º Ano", "3º Ano" (a série)
+        col_shift = "periodo_turma"  # Ex: "Manhã"
+        col_year = "ano_letivo"      # Ex: 2024
+
+        try:
+            connection = getConnection() 
+            if not connection:
+                print("Erro (load_classes): Não foi possível conectar ao banco de dados.")
+                return loaded_classes # Retorna lista vazia
+
+            cursor = connection.cursor()
+
+            # Ordena para uma exibição consistente
+            query = f"""
+                SELECT {col_id}, {col_name_identifier}, {col_grade}, {col_shift}, {col_year}
+                FROM turmas
+                ORDER BY {col_year} DESC, {col_grade}, {col_name_identifier}
+            """
+            
+            cursor.execute(query)
+            database_results = cursor.fetchall()
+
+            for row in database_results:
+                db_id_turma = row[0]
+                db_nome_identificador_turma = row[1] # Ex: "A"
+                db_serie_turma = row[2]          # Ex: "3º Ano"
+                db_periodo_turma = row[3]        # Ex: "Manhã"
+                db_ano_letivo = row[4]           # Ex: 2025
+
+                # Monta o nome de exibição como no seu mock (ex: "3º Ano A")
+                # Este será o campo "name" no dicionário retornado
+                display_name = f"{db_serie_turma} {db_nome_identificador_turma}"
+
+                class_dict = {
+                    "id": db_id_turma,
+                    "name": display_name,       # Nome composto para exibição (Série + Nome Identificador)
+                    "grade": db_serie_turma,    # A série (para manter consistência com seu mock)
+                    "shift": db_periodo_turma,  # Período
+                    "year": db_ano_letivo       # Ano letivo
+                    # O campo "teacher" foi omitido, pois decidimos não incluí-lo na tabela 'turmas'
+                }
+                loaded_classes.append(class_dict)
+
+        except mysql.connector.Error as err:
+            print(f"Erro (load_classes) ao buscar turmas do banco: {err}")
+        except Exception as e:
+            print(f"Erro inesperado (load_classes): {e}")
+        finally:
+            if cursor:
+                try:
+                    cursor.close()
+                except mysql.connector.Error: pass 
+            if connection and connection.is_connected():
+                try:
+                    connection.close()
+                except mysql.connector.Error: pass
+        
+        return loaded_classes
     
+
     def remove_class(self):
-        """Remover a turma selecionada"""
-        if not self.selected_class:
+        # Remove a turma selecionada do banco de dados e atualiza a lista local.
+
+        if not self.selected_class or "id" not in self.selected_class:
+            self.message = "Nenhuma turma selecionada para remover."
+            self.message_timer = 180
+            print("Tentativa de remover sem turma selecionada ou ID ausente.")
             return False
         
-        # Remover da lista local (simulação)
-        self.classes = [c for c in self.classes if c["id"] != self.selected_class["id"]]
-        
-        # Simulação de remoção do banco de dados
-        print(f"Turma removida: {self.selected_class}")
-        
-        # Mensagem de sucesso
-        self.message = f"Turma '{self.selected_class['name']}' removida com sucesso!"
-        self.message_timer = 180  # 3 segundos
-        
-        # Reset da seleção
-        self.selected_class = None
-        
-        return True
+        class_id_to_remove = self.selected_class["id"]
+        class_name_display = self.selected_class.get("name", f"ID {class_id_to_remove}") # Para a mensagem
+
+        try:
+            was_successful, db_message = delete_class_from_db(class_id_to_remove, getConnection)
+
+        except NameError as ne:
+            # Se delete_class_from_db ou a função de conexão não forem encontradas
+            self.message = f"Erro de configuração: {ne}"
+            self.message_timer = 180
+            print(self.message)
+            return False
+        except Exception as e:
+            self.message = f"Erro inesperado no sistema ao remover turma: {e}"
+            self.message_timer = 180
+            print(self.message)
+            return False
+
+        # Processar o resultado da operação no banco de dados
+        if was_successful:
+            self.message = db_message # Ou uma mensagem customizada: f"Turma '{class_name_display}' removida!"
+            self.message_timer = 180
+            
+            # CRUCIAL: Recarregar a lista de turmas da UI para refletir a exclusão
+            print("Recarregando lista de turmas após exclusão...")
+            self.classes = self.load_classes() 
+            
+            self.selected_class = None # Limpar a seleção
+            print(f"Sucesso no DB: {db_message}")
+            return True
+        else:
+            self.message = db_message # Mensagem de erro do banco
+            self.message_timer = 180
+            print(f"Erro no DB ao remover turma: {db_message}")
+            return False
     
     def handle_events(self):
         for event in pygame.event.get():

@@ -296,11 +296,8 @@ class RankingScreen:
     def load_students(self, serie_filter=None): 
         # Carrega os dados dos alunos para o ranking, utilizando a função do data_manager.
 
-        # A lista mock_students é removida.
-        # A ordenação com sorted() é removida (o DB já ordena).
         try:
             # Chama a função importada, passando o método de obter conexão
-            # da instância atual (self.getConnection) e o filtro.
             students_list = search_ranking_data_from_db(getConnection, serie_filter=serie_filter)
             return students_list
         except NameError as ne:

@@ -4,20 +4,20 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
 COLORS = {
-    "background": (30, 180, 195),
+    "background": (235, 235, 240),
     "light_shadow": (255, 255, 255),
-    "dark_shadow": (20, 140, 150),
-    "accent": (251, 164, 31),
-    "text": (0, 0, 0),
-    "black": (0, 0, 0),
+    "dark_shadow": (205, 205, 210),
+    "accent": (27, 185, 185),
+    "text": (60, 60, 60),
     "success": (75, 181, 67),
-    "warning": (232, 181, 12),
+    "warning": (251, 164, 31),
     "error": (232, 77, 77),
+    "black": (0, 0, 0),
 }
 
 # Configuracoes de jogo
-CHECKPOINT_INTERVALS = 5
-TOTAL_QUESTIONS = 15
+CHECKPOINT_INTERVALS = 5  # A cada 5 perguntas
+TOTAL_QUESTIONS = 15  # Total de 15 perguntas por jogo
 
 # Niveis de dificuldade
 DIFFICULTY_LEVELS = ['Facil', 'Medio', 'Dificil']

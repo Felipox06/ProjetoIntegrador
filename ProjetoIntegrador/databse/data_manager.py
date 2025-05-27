@@ -323,3 +323,60 @@ def search_ranking_data_from_db(get_connection_func, serie_filter=None):
                 print(f"Erro (data_manager) ao fechar conexão: {con_err}")
             
     return lista_alunos_ranking
+
+def delete_class_from_db(class_id_to_delete, getConnection):
+    # Exclui uma turma do banco de dados com base no seu ID.
+    connection = None
+    cursor = None
+    rows_affected = 0
+
+    # Nome da tabela e da coluna de ID 
+    table_name = "turmas"
+    id_column_name = "id_turma"
+
+    try:
+        connection = getConnection()
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        
+        cursor = connection.cursor()
+
+        sql_delete_class = f"DELETE FROM {table_name} WHERE {id_column_name} = %s"
+        
+        # Para depuração:
+        # print(f"SQL: {sql_delete_class}")
+        # print(f"ID para deletar: {class_id_to_delete}")
+
+        cursor.execute(sql_delete_class, (class_id_to_delete,))
+        connection.commit()
+        rows_affected = cursor.rowcount # Verifica quantas linhas foram afetadas
+
+        if rows_affected > 0:
+            return True, f"Turma ID {class_id_to_delete} excluída com sucesso."
+        else:
+            return False, f"Nenhuma turma encontrada com o ID {class_id_to_delete} para excluir."
+
+    except mysql.connector.Error as err:
+        # Erros de integridade referencial (FK constraints) podem acontecer aqui
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (delete_class_from_db) durante o rollback: {rb_err}")
+        return False, f"Erro de banco de dados ao excluir turma ID {class_id_to_delete}: {err}"
+    except Exception as e:
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (delete_class_from_db) durante o rollback (exceção genérica): {rb_err}")
+        return False, f"Ocorreu um erro inesperado ao excluir turma ID {class_id_to_delete}: {e}"
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass # Silencioso ou log mínimo
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass # Silencioso ou log mínimo
