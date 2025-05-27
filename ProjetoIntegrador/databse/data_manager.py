@@ -255,3 +255,71 @@ def adicionar_turma_db(dados_turma, funcao_get_conexao):
                 connection.close()
             except mysql.connector.Error as con_err:
                 print(f"Erro ao fechar a conexão: {con_err}")
+
+def search_ranking_data_from_db(get_connection_func, serie_filter=None):
+    # Busca os dados dos alunos do banco de dados para o ranking
+    connection = None
+    cursor = None
+    lista_alunos_ranking = []
+
+    # Nomes das colunas da sua tabela alunos
+    col_ra = "aluno_RA"
+    col_nome = "nome_aluno"
+    col_turma = "turma"
+    col_pontuacao = "pont_total"
+
+    try:
+        connection = get_connection_func() # Chama a função de conexão passada
+        if not connection:
+            print("Erro (data_manager): Não foi possível conectar ao banco.")
+            return lista_alunos_ranking
+        
+        cursor = connection.cursor()
+        query_sql = f"SELECT {col_ra}, {col_nome}, {col_turma}, {col_pontuacao} FROM alunos"
+        params = []
+        valid_series_filters = ["1º Ano", "2º Ano", "3º Ano"]
+
+        if serie_filter and serie_filter in valid_series_filters:
+            query_sql += f" WHERE {col_turma} LIKE %s"
+            params.append(f"{serie_filter}%")
+        
+        query_sql += f" ORDER BY {col_pontuacao} DESC"
+
+        if params:
+            cursor.execute(query_sql, params)
+        else:
+            cursor.execute(query_sql)
+        
+        resultados_db = cursor.fetchall()
+
+        for linha_db in resultados_db:
+            ra, nome, turma_completa, pontuacao = linha_db
+            partes_turma = turma_completa.split()
+            serie_para_exibicao = " ".join(partes_turma[:2]) if len(partes_turma) >= 2 else turma_completa
+            
+            aluno_dict = {
+                "ra": ra,
+                "name": nome,
+                "series": serie_para_exibicao,
+                "score": float(pontuacao) if pontuacao is not None else 0.0
+                # O campo "games_played" foi removido conforme sua solicitação
+            }
+            lista_alunos_ranking.append(aluno_dict)
+
+    except mysql.connector.Error as err:
+        print(f"Erro (data_manager) ao buscar ranking: {err}")
+    except Exception as e:
+        print(f"Erro inesperado (data_manager): {e}")
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error as cur_err:
+                print(f"Erro (data_manager) ao fechar cursor: {cur_err}")
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error as con_err:
+                print(f"Erro (data_manager) ao fechar conexão: {con_err}")
+            
+    return lista_alunos_ranking

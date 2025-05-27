@@ -4,6 +4,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import search_ranking_data_from_db
+from databse.db_connector import getConnection
 
 # Importar config se existir
 try:
@@ -291,99 +293,24 @@ class RankingScreen:
             "VOLTAR", self.text_font
         )
         
-    def load_students(self):
-        # Função mockup para carregar alunos do banco
-        # No código real, faria uma consulta SQL ordenada por pontuação
-        
-        mock_students = [
-            {
-                "ra": 25001074,
-                "name": "Lucas Quadros",
-                "series": "3º Ano",
-                "score": 25000,
-                "games_played": 12
-            },
-            {
-                "ra": 25001075,
-                "name": "Maria Silva",
-                "series": "2º Ano",
-                "score": 18500,
-                "games_played": 10
-            },
-            {
-                "ra": 25001076,
-                "name": "João Santos",
-                "series": "3º Ano",
-                "score": 16000,
-                "games_played": 8
-            },
-            {
-                "ra": 25001077,
-                "name": "Ana Oliveira",
-                "series": "1º Ano",
-                "score": 12000,
-                "games_played": 6
-            },
-            {
-                "ra": 25001078,
-                "name": "Pedro Costa",
-                "series": "2º Ano",
-                "score": 10500,
-                "games_played": 7
-            },
-            {
-                "ra": 25001079,
-                "name": "Juliana Lima",
-                "series": "3º Ano",
-                "score": 8000,
-                "games_played": 5
-            },
-            {
-                "ra": 25001080,
-                "name": "Matheus Ferreira",
-                "series": "1º Ano",
-                "score": 7500,
-                "games_played": 5
-            },
-            {
-                "ra": 25001081,
-                "name": "Carolina Rodrigues",
-                "series": "2º Ano",
-                "score": 6000,
-                "games_played": 4
-            },
-            {
-                "ra": 25001082,
-                "name": "Gustavo Souza",
-                "series": "3º Ano",
-                "score": 5500,
-                "games_played": 4
-            },
-            {
-                "ra": 25001083,
-                "name": "Amanda Ribeiro",
-                "series": "1º Ano",
-                "score": 4000,
-                "games_played": 3
-            },
-            {
-                "ra": 25001084,
-                "name": "Rodrigo Almeida",
-                "series": "2º Ano",
-                "score": 3500,
-                "games_played": 3
-            },
-            {
-                "ra": 25001085,
-                "name": "Camila Gomes",
-                "series": "3º Ano",
-                "score": 2500,
-                "games_played": 2
-            }
-        ]
-        
-        # Ordenar por pontuação (decrescente)
-        return sorted(mock_students, key=lambda x: x["score"], reverse=True)
+    def load_students(self, serie_filter=None): 
+        # Carrega os dados dos alunos para o ranking, utilizando a função do data_manager.
+
+        # A lista mock_students é removida.
+        # A ordenação com sorted() é removida (o DB já ordena).
+        try:
+            # Chama a função importada, passando o método de obter conexão
+            # da instância atual (self.getConnection) e o filtro.
+            students_list = search_ranking_data_from_db(getConnection, serie_filter=serie_filter)
+            return students_list
+        except NameError as ne:
+            # Isso pode acontecer se fetch_ranking_data_from_db não for importada corretamente
+            print(f"Erro em RankingScreen: Função 'fetch_ranking_data_from_db' não encontrada. Verifique a importação. ({ne})")
+            return [] # Retorna lista vazia em caso de erro de importação
+        except Exception as e:
+            # Captura outros erros que podem ocorrer na chamada
+            print(f"Erro inesperado em RankingScreen ao tentar carregar estudantes: {e}")
+            return [] # Retorna lista vazia
     
     def apply_filters(self):
         # Aplicar filtro por série
