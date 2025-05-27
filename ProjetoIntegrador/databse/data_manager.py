@@ -380,3 +380,174 @@ def delete_class_from_db(class_id_to_delete, getConnection):
             try:
                 connection.close()
             except mysql.connector.Error: pass # Silencioso ou log mínimo
+
+def delete_user_from_db(user_ra, user_type, getConnection):
+    # Exclui um usuário (aluno ou professor) do banco de dados.
+    connection = None
+    cursor = None
+    rows_affected = 0
+
+    table_name = ""
+    id_column_name = ""
+
+    if user_type == "Aluno":
+        table_name = "alunos"
+        id_column_name = "aluno_RA"
+    elif user_type == "Professor":
+        table_name = "professores"
+        id_column_name = "prof_RA"
+    else:
+        return False, f"Tipo de usuário desconhecido: {user_type}"
+
+    try:
+        connection = getConnection()
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        
+        cursor = connection.cursor()
+
+        sql_delete_user = f"DELETE FROM {table_name} WHERE {id_column_name} = %s"
+        
+        # Para depuração:
+        # print(f"SQL: {sql_delete_user}")
+        # print(f"RA para deletar: {user_ra} (Tipo: {user_type})")
+
+        cursor.execute(sql_delete_user, (user_ra,))
+        connection.commit()
+        rows_affected = cursor.rowcount
+
+        if rows_affected > 0:
+            return True, f"{user_type} RA {user_ra} excluído(a) com sucesso."
+        else:
+            # Isso pode acontecer se o usuário já foi deletado ou o RA/tipo não existe.
+            return False, f"Nenhum {user_type.lower()} encontrado com RA {user_ra} para excluir."
+
+    except mysql.connector.Error as err:
+        # Lidar com erros de FK aqui se necessário (err.errno pode dar pistas)
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (delete_user_from_db) durante o rollback: {rb_err}")
+        return False, f"Erro de banco de dados ao excluir {user_type.lower()} RA {user_ra}: {err}"
+    except Exception as e:
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (delete_user_from_db) durante o rollback (exceção genérica): {rb_err}")
+        return False, f"Ocorreu um erro inesperado ao excluir {user_type.lower()} RA {user_ra}: {e}"
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass 
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass
+
+
+def search_all_users_from_db(get_connection_func):
+    # Busca todos os usuários (alunos e professores) do banco de dados.
+    all_users_list = []
+    connection = None
+    cursor = None
+
+    # Nomes das tabelas e colunas - AJUSTE CONFORME SEU BANCO DE DADOS!
+    # Tabela Alunos
+    table_alunos = "alunos"
+    col_aluno_ra = "aluno_RA"
+    col_aluno_nome = "nome_aluno"
+    col_aluno_turma = "turma"  # Ex: "1º Ano A", "3º Ano B"
+    col_aluno_senha = "senha_aluno"
+
+    # Tabela Professores
+    table_professores = "professores"
+    col_prof_ra = "prof_RA"
+    col_prof_nome = "nome_prof"
+    col_prof_materia = "matéria" # Coluna no DB (com acento)
+    col_prof_senha = "senha_prof"
+
+
+    try:
+        connection = getConnection()
+        if not connection:
+            print("Erro (fetch_all_users): Falha ao obter conexão com o banco.")
+            return all_users_list
+        
+        cursor = connection.cursor()
+
+        # Buscar Alunos
+        sql_alunos = f"SELECT {col_aluno_ra}, {col_aluno_nome}, {col_aluno_turma}, {col_aluno_senha} FROM {table_alunos}"
+        cursor.execute(sql_alunos)
+        alunos_db = cursor.fetchall()
+
+        for aluno_row in alunos_db:
+            ra, nome, turma_completa, senha = aluno_row
+            
+            # Processar turma_completa para obter serie e classe
+            # Assume formato como "Xº Ano Y" (ex: "1º Ano A", "3º Ano B")
+            # Se o formato for diferente, esta lógica de split precisará de ajuste.
+            partes_turma = turma_completa.split()
+            serie_aluno = ""
+            classe_aluno = ""
+            if len(partes_turma) >= 2: # Espera pelo menos "Xº Ano"
+                serie_aluno = f"{partes_turma[0]} {partes_turma[1]}" # Ex: "1º Ano"
+                if len(partes_turma) > 2:
+                    classe_aluno = " ".join(partes_turma[2:]) # Pega o resto como classe, ex: "A" ou "A Matutino"
+            else: # Caso inesperado, usa a turma completa como série
+                serie_aluno = turma_completa
+
+            # Para corresponder ao seu mock "2 Ano" (sem "º"):
+            # Se a série extraída contiver "º", você pode normalizá-la:
+            # if "º" in serie_aluno:
+            #     serie_aluno = serie_aluno.replace("º", "") # Ex: "1º Ano" -> "1 Ano"
+            # Faça isso se a sua UI espera estritamente "X Ano".
+
+            aluno_dict = {
+                "RA": ra,
+                "nome": nome,
+                "tipo": "Aluno",
+                "serie": serie_aluno, # Ex: "1º Ano" (ou "1 Ano" se normalizado acima)
+                "classe": classe_aluno, # Ex: "A"
+                "senha": senha
+            }
+            all_users_list.append(aluno_dict)
+
+        # Buscar Professores
+        # (Fechando e reabrindo cursor ou usando um novo cursor é uma boa prática entre queries
+        #  se houver muitos dados ou processamento, mas para duas simples pode não ser estritamente necessário)
+        # cursor.close() # Opcional aqui, será fechado no finally
+        # cursor = connection.cursor() # Opcional aqui
+
+        sql_professores = f"SELECT {col_prof_ra}, {col_prof_nome}, {col_prof_materia}, {col_prof_senha} FROM {table_professores}"
+        cursor.execute(sql_professores)
+        professores_db = cursor.fetchall()
+
+        for prof_row in professores_db:
+            ra, nome, materia_db, senha = prof_row
+            professor_dict = {
+                "RA": ra,
+                "nome": nome,
+                "tipo": "Professor",
+                "materia": materia_db,
+                "senha": senha
+            }
+            all_users_list.append(professor_dict)
+
+    except mysql.connector.Error as err:
+        print(f"Erro (fetch_all_users) de banco de dados: {err}")
+    except Exception as e:
+        print(f"Erro inesperado (fetch_all_users): {e}")
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass
+            
+    return all_users_list

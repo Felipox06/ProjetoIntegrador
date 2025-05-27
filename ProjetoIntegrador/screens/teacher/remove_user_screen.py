@@ -4,6 +4,9 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import delete_user_from_db
+from databse.data_manager import search_all_users_from_db
+from databse.db_connector import getConnection
 
 # Importar config se existir
 try:
@@ -208,15 +211,18 @@ class RemoveUserScreen:
         self.message_timer = 0
         self.message_type = "info"
         
-        # Dados simulados (sem campo ativo)
-        self.all_users = [
-            {"RA": 12345, "nome": "Joao Silva", "tipo": "Aluno", "serie": "2 Ano", "classe": "A", "senha": "1234"},
-            {"RA": 67890, "nome": "Maria Santos", "tipo": "Professor", "materia": "Matematica", "senha": "5678"},
-            {"RA": 11111, "nome": "Ana Costa", "tipo": "Aluno", "serie": "1 Ano", "classe": "B", "senha": "1111"},
-            {"RA": 22222, "nome": "Carlos Oliveira", "tipo": "Professor", "materia": "Fisica", "senha": "2222"},
-            {"RA": 33333, "nome": "Lucia Ferreira", "tipo": "Aluno", "serie": "3 Ano", "classe": "C", "senha": "3333"},
-            {"RA": 44444, "nome": "Pedro Alves", "tipo": "Professor", "materia": "Historia", "senha": "4444"},
-        ]
+        # Dados
+        print("Inicializando: Carregando todos os usuários do banco de dados...")
+        try:
+            self.all_users = search_all_users_from_db(getConnection) 
+            print(f"Inicialização: {len(self.all_users)} usuários carregados do banco.")
+        except NameError as ne:
+            print(f"Erro de Configuração ao inicializar usuários: Função não encontrada. Verifique os imports. {ne}")
+            self.all_users = [] # Define como lista vazia para evitar erros posteriores
+        except Exception as e:
+            print(f"Erro Inesperado ao inicializar usuários do banco: {e}")
+            self.all_users = [] # Define como lista vazia
+
         
         self.filtered_users = self.all_users.copy()
         self.user_checkboxes = {}  # Dicionário para mapear RA -> checkbox
@@ -381,28 +387,75 @@ class RemoveUserScreen:
         self.update_selected_users()
     
     def remover_users(self):
-        """Remove permanentemente os usuários selecionados"""
-        ras_to_remove = [user['RA'] for user in self.selected_users]
+        # Remove permanentemente os usuários selecionados do banco de dados e da lista local.
+        if not self.selected_users:
+            print("Nenhum usuário selecionado para remoção.")
+            return False, "Nenhum usuário selecionado."
+
+        successfully_removed_ras = []
+        failed_removals = [] # Para armazenar RAs que falharam na remoção
+
+        # Iterar sobre uma cópia da lista de usuários selecionados se você for modificar
+        # self.selected_users dentro do loop, mas aqui estamos apenas lendo.
+        for user_data in self.selected_users:
+            user_ra = user_data.get('RA')
+            user_type = user_data.get('tipo') # 'Aluno' ou 'Professor'
+
+            if not user_ra or not user_type:
+                print(f"Dados incompletos para um usuário selecionado: {user_data}")
+                failed_removals.append(f"Dados incompletos para {user_data.get('nome', 'usuário desconhecido')}")
+                continue
+
+            try:
+                # ADAPTE AQUI a forma como você chama sua função de conexão:
+                # Se 'getConnection' foi importada globalmente:
+                #   success, db_message = delete_user_from_db(user_ra, user_type, getConnection)
+                # Se for um método da classe atual (ex: self.get_db_connection):
+                #   success, db_message = delete_user_from_db(user_ra, user_type, self.get_db_connection)
+                
+                # Usando getConnection como exemplo de função global/importada
+                success, db_message = delete_user_from_db(user_ra, user_type, getConnection)
+
+                if success:
+                    successfully_removed_ras.append(user_ra)
+                    print(db_message) # Log do sucesso
+                else:
+                    print(db_message) # Log da falha
+                    failed_removals.append(f"RA {user_ra} ({user_type}): {db_message}")
+            
+            except NameError as ne: # Se delete_user_from_db ou getConnection não for encontrada
+                error_msg = f"Erro de configuração no código ao tentar remover RA {user_ra}: {ne}"
+                print(error_msg)
+                failed_removals.append(f"RA {user_ra} ({user_type}): Erro de configuração - {ne}")
+                # Pode ser melhor parar aqui se houver um NameError, pois afetará todos
+                # break 
+            except Exception as e:
+                error_msg = f"Erro inesperado no sistema ao remover RA {user_ra} ({user_type}): {e}"
+                print(error_msg)
+                failed_removals.append(f"RA {user_ra} ({user_type}): Erro inesperado - {e}")
+
+        # Atualizar a lista local self.all_users
+        if successfully_removed_ras:
+            self.all_users = [u for u in self.all_users if u['RA'] not in successfully_removed_ras]
+
+        # Limpar seleções e reaplicar filtro/recarregar dados da UI
+        self.deselect_all_users() # Você mencionou que tem este método
+        self.apply_filter()       # Você mencionou que tem este método (ou chame self.load_all_users())
+
+        # Montar mensagem final para o usuário
+        final_message = ""
+        if successfully_removed_ras:
+            final_message += f"{len(successfully_removed_ras)} usuário(s) removido(s) com sucesso. "
+        if failed_removals:
+            final_message += f"{len(failed_removals)} falha(s) ao remover: {'; '.join(failed_removals)}"
         
-        # SIMULAÇÃO - Em produção, faria DELETE no banco (cuidado com FKs)
-        print("=== REMOVER USUARIOS DO BANCO ===")
-        for ra in ras_to_remove:
-            user = next(u for u in self.selected_users if u['RA'] == ra)
-            if user['tipo'] == 'Aluno':
-                print(f"DELETE FROM alunos WHERE aluno_RA = {ra}")
-            else:
-                print(f"DELETE FROM professores WHERE prof_RA = {ra}")
-        print(f"DELETE FROM usuarios WHERE RA IN ({', '.join(map(str, ras_to_remove))})")
-        print("=====================================")
+        if not final_message: # Caso nenhum usuário tenha sido processado (ex: lista de seleção vazia no início)
+            final_message = "Nenhuma operação de remoção realizada."
+
+        # self.show_ui_message(final_message) # Atualizar a UI com a mensagem final
+        print(f"Resultado final da remoção: {final_message}")
         
-        # Remover da lista local
-        self.all_users = [u for u in self.all_users if u['RA'] not in ras_to_remove]
-        
-        # Limpar seleções e reaplicar filtro
-        self.deselect_all_users()
-        self.apply_filter()
-        
-        return True, f"{len(ras_to_remove)} usuario(s) removido(s) permanentemente!"
+        return len(successfully_removed_ras) > 0, final_message
     
     def handle_events(self):
         for event in pygame.event.get():
