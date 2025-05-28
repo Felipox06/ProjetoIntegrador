@@ -4,6 +4,9 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.db_connector import getConnection
+from databse.data_manager import delete_question_from_db
+import mysql.connector
 
 # Importar config se existir
 try:
@@ -435,97 +438,91 @@ class QuestionRemoveScreen:
         )
         
     def load_questions(self):
-        # Função mockup para carregar questões do banco
-        # No código real, faria uma consulta SQL
+    
+        # Carrega a lista de questões do banco de dados
+        loaded_questions = []
+        connection = None
+        cursor = None
+
+        # Nomes das suas tabelas e colunas - AJUSTE SE NECESSÁRIO!
+        # Tabela questoes
+        tbl_q = "questoes"
+        col_q_id = "id_questao"
+        col_q_enunciado = "enunciado"
+        col_q_id_materia = "id_materia" # Chave estrangeira
+        col_q_serie = "serie"
+        col_q_id_dificuldade = "id_dificuldade" # Chave estrangeira
+        col_q_alt1 = "alternativa_1"
+        col_q_alt2 = "alternativa_2"
+        col_q_alt3 = "alternativa_3"
+        col_q_alt4 = "alternativa_4"
+        col_q_idx_correta = "indice_alternativa_correta"
+        col_q_explicacao = "explicacao"
+
+        # Tabela materias
+        tbl_m = "materias"
+        col_m_id = "id_materia" # Chave primária em materias
+        col_m_nome = "nome_materia" # Nome da matéria
+
+        # Tabela dificuldades
+        tbl_d = "dificuldades"
+        col_d_id = "id_dificuldade" # Chave primária em dificuldades
+        col_d_nome = "nome_dificuldade" # Nome da dificuldade
+
+        try:
+            connection = getConnection()
+            if not connection:
+                print("Erro (load_questions): Não foi possível conectar ao banco de dados.")
+                return loaded_questions
+
+            cursor = connection.cursor()
+
+            query = f"""
+                SELECT
+                    q.{col_q_id}, q.{col_q_enunciado}, m.{col_m_nome}, q.{col_q_serie},
+                    d.{col_d_nome}, q.{col_q_alt1}, q.{col_q_alt2}, q.{col_q_alt3},
+                    q.{col_q_alt4}, q.{col_q_idx_correta}, q.{col_q_explicacao}
+                FROM
+                    {tbl_q} q
+                JOIN
+                    {tbl_m} m ON q.{col_q_id_materia} = m.{col_m_id}
+                JOIN
+                    {tbl_d} d ON q.{col_q_id_dificuldade} = d.{col_d_id}
+                ORDER BY
+                    q.{col_q_id};
+            """
+            # print(f"DEBUG SQL (load_questions): {query}") # Para depuração
+            cursor.execute(query)
+            database_results = cursor.fetchall()
+
+            for row in database_results:
+                question_dict = {
+                    "id": row[0],
+                    "text": row[1],
+                    "subject": row[2],  # nome_materia
+                    "grade": row[3],    # serie
+                    "difficulty": row[4],# nome_dificuldade
+                    "options": [row[5], row[6], row[7], row[8]], # alt1, alt2, alt3, alt4
+                    "correct_option": row[9], # indice_alternativa_correta
+                    "explanation": row[10]
+                }
+                loaded_questions.append(question_dict)
+
+        except mysql.connector.Error as err:
+            print(f"Erro (load_questions) ao buscar questões do banco: {err}")
+        except Exception as e:
+            print(f"Erro inesperado (load_questions): {e}")
+        finally:
+            if cursor:
+                try:
+                    cursor.close()
+                except mysql.connector.Error: pass
+            if connection and connection.is_connected():
+                try:
+                    connection.close()
+                except mysql.connector.Error: pass
         
-        mock_questions = [
-            {
-                "id": 1,
-                "text": "Qual é o resultado de 7 x 8?",
-                "subject": "Matematica",
-                "grade": "1 Ano",
-                "difficulty": "Facil",
-                "options": ["54", "56", "64", "72"],
-                "correct_option": 1,
-                "explanation": "Multiplicação simples: 7 × 8 = 56"
-            },
-            {
-                "id": 2,
-                "text": "Qual é a capital da França?",
-                "subject": "Geografia",
-                "grade": "2 Ano",
-                "difficulty": "Facil",
-                "options": ["Londres", "Paris", "Roma", "Madri"],
-                "correct_option": 1,
-                "explanation": "Paris é a capital da França."
-            },
-            {
-                "id": 3,
-                "text": "Qual é a fórmula química da água?",
-                "subject": "Quimica",
-                "grade": "1 Ano",
-                "difficulty": "Facil",
-                "options": ["CO2", "H2O", "O2", "NaCl"],
-                "correct_option": 1,
-                "explanation": "A água é formada por duas moléculas de hidrogênio e uma de oxigênio, H2O."
-            },
-            {
-                "id": 4,
-                "text": "Qual é a área de um círculo com raio 5cm? (Use π = 3.14)",
-                "subject": "Matematica",
-                "grade": "2 Ano",
-                "difficulty": "Medio",
-                "options": ["25π cm²", "10π cm²", "15π cm²", "20π cm²"],
-                "correct_option": 0,
-                "explanation": "A área de um círculo é A = π × r², assim A = π × 5² = 25π cm²"
-            },
-            {
-                "id": 5,
-                "text": "Quem escreveu 'Dom Casmurro'?",
-                "subject": "Portugues",
-                "grade": "3 Ano",
-                "difficulty": "Medio",
-                "options": ["José de Alencar", "Machado de Assis", "Clarice Lispector", "Carlos Drummond de Andrade"],
-                "correct_option": 1,
-                "explanation": "Dom Casmurro é um romance escrito por Machado de Assis, publicado em 1899."
-            },
-            {
-                "id": 6,
-                "text": "Qual é a solução da equação 2x² - 5x - 3 = 0?",
-                "subject": "Matematica",
-                "grade": "3 Ano",
-                "difficulty": "Dificil",
-                "options": ["x = 3 ou x = -0.5", "x = 2.5 ou x = -0.5", "x = 3 ou x = -1", "x = 2 ou x = -1.5"],
-                "correct_option": 0,
-                "explanation": "Usando a fórmula de Bhaskara: x = (-b ± √(b² - 4ac))/2a, onde a=2, b=-5, c=-3"
-            },
-            {
-                "id": 7,
-                "text": "Um objeto é lançado verticalmente para cima. No ponto mais alto da trajetória:",
-                "subject": "Fisica",
-                "grade": "2 Ano",
-                "difficulty": "Medio",
-                "options": ["A velocidade e a aceleração são nulas", "A velocidade é nula e a aceleração é g", 
-                           "A velocidade é g e a aceleração é nula", "A velocidade e a aceleração são iguais a g"],
-                "correct_option": 1,
-                "explanation": "No ponto mais alto, a velocidade instantânea é zero, mas a aceleração da gravidade continua agindo."
-            },
-            {
-                "id": 8,
-                "text": "Quais são os principais tipos de RNA e suas funções?",
-                "subject": "Biologia",
-                "grade": "3 Ano",
-                "difficulty": "Dificil",
-                "options": ["mRNA, tRNA e rRNA - transcrição, tradução e estrutura ribossômica", 
-                           "DNA, RNA e proteínas - replicação, transcrição e tradução", 
-                           "Ribossomos, lisossomos e mitocôndrias - síntese, digestão e energia", 
-                           "Núcleo, citoplasma e membrana - controle, metabolismo e proteção"],
-                "correct_option": 0,
-                "explanation": "Os principais tipos de RNA são: mRNA (RNA mensageiro), tRNA (RNA transportador) e rRNA (RNA ribossômico)."
-            }
-        ]
-        
-        return mock_questions
+        return loaded_questions
     
     def apply_filters(self):
         # Filtrar as questões com base nas seleções
@@ -586,20 +583,67 @@ class QuestionRemoveScreen:
         self.filter_timer = 120
         self.filter_active = False
     
-    def remove_question(self, question):
-        # Remover a questão da lista (simulação)
-        # Em um app real, executaria um DELETE no banco de dados
+    def remove_question(self, question_to_remove):
+     
+        # Remove a questão selecionada do banco de dados e atualiza as listas locais.
+        if not question_to_remove or "id" not in question_to_remove:
+            self.removal_message = "Nenhuma questão válida selecionada para remover."
+            self.removal_timer = 180
+            print("Tentativa de remover sem questão selecionada ou ID ausente.")
+            return # Ou retorne False, dependendo de como sua UI trata isso
+
+        question_id = question_to_remove["id"]
+        question_text_preview = question_to_remove.get("text", f"ID {question_id}")[:30] # Para a mensagem
+
+        # --- CHAMADA REAL AO BANCO PARA EXCLUIR ---
+        try:
+            # Adapte 'self.get_connection' ao seu método/função real de obter conexão
+            # Certifique-se de que 'delete_question_from_db' está importada
+            was_successful, db_message = delete_question_from_db(question_id, getConnection)
+
+        except NameError as ne:
+            self.removal_message = f"Erro de configuração: {ne}"
+            self.removal_timer = 180
+            print(self.removal_message)
+            return
+        except Exception as e:
+            self.removal_message = f"Erro inesperado no sistema ao remover questão: {e}"
+            self.removal_timer = 180
+            print(self.removal_message)
+            return
+
+        # Processar o resultado da operação no banco de dados
+        if was_successful:
+            self.removal_message = db_message # Ou f"Questão '{question_text_preview}...' removida!"
+            self.removal_timer = 180
+            
+            # Recarregar a lista de questões da UI para refletir a exclusão
+            print("Recarregando lista de questões após exclusão...")
+            self.questions = self.load_questions() 
+            self.update_filtered_list() 
+
+            self.selected_question = None # Limpar a seleção
+            print(f"Sucesso no DB: {db_message}")
+        else:
+            self.removal_message = db_message # Mensagem de erro do banco
+            self.removal_timer = 180
+            print(f"Erro no DB ao remover questão: {db_message}")
         
-        self.questions = [q for q in self.questions if q["id"] != question["id"]]
-        self.filtered_questions = [q for q in self.filtered_questions if q["id"] != question["id"]]
+        # Se sua função remove_question não precisa retornar um booleano, pode remover o return abaixo
+        # return was_successful
+
+
+    def update_filtered_list(self):
+        if hasattr(self, 'current_active_filter_params'): # Exemplo
+             self.filtered_questions = self._filter_questions(self.questions, self.current_active_filter_params)
+        else:
+             self.filtered_questions = list(self.questions)
+        print(f"Lista filtrada atualizada, {len(self.filtered_questions)} questões.")
+
         
-        # Mostrar mensagem de confirmação
-        self.removal_message = f"Questão #{question['id']} removida com sucesso"
-        self.removal_timer = 180  # 3 segundos
-        
-        # Resetar seleção
-        self.selected_question = None
-    
+
+
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:

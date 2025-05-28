@@ -619,3 +619,59 @@ def update_class_in_db(class_id, new_class_data, getConnection):
             try:
                 connection.close()
             except mysql.connector.Error: pass
+
+def delete_question_from_db(question_id_to_delete, getConnection):
+
+    # Exclui uma questão do banco de dados com base no seu ID.
+    connection = None
+    cursor = None
+    rows_affected = 0
+
+    # Nome da tabela e da coluna de ID (ajuste se necessário)
+    table_name = "questoes"
+    id_column_name = "id_questao"
+
+    try:
+        connection = getConnection()
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        
+        cursor = connection.cursor()
+
+        sql_delete_question = f"DELETE FROM {table_name} WHERE {id_column_name} = %s"
+        
+        # print(f"DEBUG SQL (delete_question): {sql_delete_question}") # Para depuração
+        # print(f"DEBUG ID para deletar: {question_id_to_delete}")    # Para depuração
+
+        cursor.execute(sql_delete_question, (question_id_to_delete,))
+        connection.commit()
+        rows_affected = cursor.rowcount
+
+        if rows_affected > 0:
+            return True, f"Questão ID {question_id_to_delete} excluída com sucesso."
+        else:
+            return False, f"Nenhuma questão encontrada com o ID {question_id_to_delete} para excluir."
+
+    except mysql.connector.Error as err:
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (delete_question_from_db) durante o rollback: {rb_err}")
+        return False, f"Erro de banco de dados ao excluir questão ID {question_id_to_delete}: {err}"
+    except Exception as e:
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (delete_question_from_db) durante o rollback (exceção genérica): {rb_err}")
+        return False, f"Ocorreu um erro inesperado ao excluir questão ID {question_id_to_delete}: {e}"
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass
