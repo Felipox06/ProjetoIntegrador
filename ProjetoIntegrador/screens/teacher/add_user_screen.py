@@ -4,8 +4,8 @@
 import pygame
 import sys
 from pygame.locals import *
-from databse.data_manager import add_user_to_database
-from databse.db_connector import getConnection
+from databse.data_manager import add_user_to_database # Corrigido: database
+from databse.db_connector import getConnection # Corrigido: database
 
 # Importar config se existir
 try:
@@ -36,11 +36,16 @@ class NeumorphicPanel:
         self.border_radius = border_radius
     
     def draw(self, surface):
+        # Desenha a sombra escura primeiro para ficar por baixo
+        shadow_rect_dark_outer = pygame.Rect(self.rect.x + 3, self.rect.y + 3, self.rect.width, self.rect.height)
+        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark_outer, border_radius=self.border_radius)
+        
+        # Desenha a sombra clara
+        shadow_rect_light_outer = pygame.Rect(self.rect.x - 3, self.rect.y - 3, self.rect.width, self.rect.height)
+        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light_outer, border_radius=self.border_radius)
+
+        # Desenha o painel principal por cima das sombras
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -56,93 +61,120 @@ class NeumorphicButton:
         self.is_active = is_active
         self.pressed = False
         
-        self.text_surf = font.render(text, True, (50, 50, 50))
+        self.text_surf = font.render(text, True, COLORS["text"]) # Usar COLORS["text"]
         self.text_rect = self.text_surf.get_rect(center=self.rect.center)
     
     def is_clicked(self, pos):
         return self.rect.collidepoint(pos)
     
     def draw(self, surface):
-        is_pressed = self.pressed or (self.is_toggle and self.is_active)
+        is_pressed_state = self.pressed or (self.is_toggle and self.is_active)
         
-        if is_pressed:
-            pygame.draw.rect(surface, self.bg_color, 
-                           pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
-                           border_radius=10)
-            pygame.draw.rect(surface, self.accent_color, 
-                           self.rect, border_radius=10, width=2)
-            text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
-            surface.blit(self.text_surf, text_rect)
+        if is_pressed_state:
+            # Efeito de botão pressionado (inset)
+            pygame.draw.rect(surface, self.dark_shadow, self.rect, border_radius=10) # Sombra interna escura
+            inner_rect = self.rect.inflate(-4, -4)
+            pygame.draw.rect(surface, self.light_shadow, inner_rect, border_radius=8) # Sombra interna clara
+            pygame.draw.rect(surface, self.bg_color, inner_rect.inflate(-2,-2), border_radius=6) # Fundo levemente ajustado
+
+            text_color = self.accent_color if self.is_toggle else COLORS["text"]
+            text_surf_pressed = self.font.render(self.text, True, text_color)
+            text_rect_pressed = text_surf_pressed.get_rect(center=self.rect.center)
+            surface.blit(text_surf_pressed, text_rect_pressed)
         else:
+            # Efeito de botão elevado
+            shadow_offset = 3
+            shadow_color_light = self.light_shadow
+            shadow_color_dark = self.dark_shadow
+
+            # Sombra escura (embaixo e à direita)
+            pygame.draw.rect(surface, shadow_color_dark, 
+                             (self.rect.x + shadow_offset, self.rect.y + shadow_offset, self.rect.width, self.rect.height), 
+                             border_radius=10)
+            # Sombra clara (emcima e à esquerda)
+            pygame.draw.rect(surface, shadow_color_light, 
+                             (self.rect.x - shadow_offset, self.rect.y - shadow_offset, self.rect.width, self.rect.height), 
+                             border_radius=10)
+            # Botão principal
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
             surface.blit(self.text_surf, self.text_rect)
 
 class NeumorphicInput:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 placeholder, font, is_password=False, numeric_only=False, max_length=50):
+                 placeholder, font, text_color=COLORS["text"], placeholder_color=(150,150,150), 
+                 is_password=False, numeric_only=False, max_length=50):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
         self.light_shadow = light_shadow
         self.dark_shadow = dark_shadow
         self.placeholder = placeholder
         self.font = font
+        self.text_color = text_color
+        self.placeholder_color = placeholder_color
         self.is_password = is_password
-        self.numeric_only = numeric_only
+        self.numeric_only = numeric_only # Mantido para referência, mas não usado na lógica de add char
         self.max_length = max_length
         self.text = ""
         self.active = False
         
         self.cursor_visible = True
         self.cursor_timer = 0
-    
+        self.padding = 15 # Padding interno para o texto
+
     def is_clicked(self, pos):
         return self.rect.collidepoint(pos)
     
     def draw(self, surface):
-        pygame.draw.rect(surface, self.bg_color, 
-                       pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width-4, self.rect.height-4), 
-                       border_radius=10)
+        # Efeito de input afundado (inset)
+        # Sombra escura interna (canto superior esquerdo)
+        pygame.draw.rect(surface, self.dark_shadow, self.rect, border_radius=10)
         
-        shadow_rect_dark = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
+        # Sombra clara interna (canto inferior direito)
+        inner_rect_light = self.rect.inflate(-3, -3) # Pequeno ajuste para a sombra clara não sobrepor totalmente
+        pygame.draw.rect(surface, self.light_shadow, inner_rect_light, border_radius=8)
         
-        shadow_rect_light = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-        
+        # Fundo do input
+        main_input_rect = self.rect.inflate(-6, -6) # Área interna para o texto
+        pygame.draw.rect(surface, self.bg_color, main_input_rect, border_radius=6)
+
+        # Linha de foco se ativo
         if self.active:
-            pygame.draw.line(surface, (120, 120, 255), 
-                           (self.rect.x + 15, self.rect.y + self.rect.height - 8),
-                           (self.rect.x + self.rect.width - 15, self.rect.y + self.rect.height - 8),
-                           2)
+            focus_rect = self.rect.inflate(-2,-2)
+            pygame.draw.rect(surface, COLORS.get("accent", (106, 130, 251)), focus_rect, width=2, border_radius=10)
         
+        # Texto ou Placeholder
         if self.text:
-            if self.is_password:
-                displayed_text = "*" * len(self.text)
-            else:
-                displayed_text = self.text
-            text_surface = self.font.render(displayed_text, True, (50, 50, 50))
+            display_string = "*" * len(self.text) if self.is_password else self.text
+            text_surface = self.font.render(display_string, True, self.text_color)
         else:
-            text_surface = self.font.render(self.placeholder, True, (150, 150, 150))
+            text_surface = self.font.render(self.placeholder, True, self.placeholder_color)
         
-        text_rect = text_surface.get_rect(midleft=(self.rect.x + 15, self.rect.y + self.rect.height // 2))
+        # Centraliza verticalmente, alinha à esquerda com padding
+        text_rect = text_surface.get_rect(midleft=(self.rect.x + self.padding, self.rect.centery))
         surface.blit(text_surface, text_rect)
         
+        # Cursor
         if self.active:
             self.cursor_timer += 1
-            if self.cursor_timer >= 30:
+            if self.cursor_timer >= 30: # Piscar a cada 0.5s a 60FPS
                 self.cursor_visible = not self.cursor_visible
                 self.cursor_timer = 0
             
             if self.cursor_visible:
-                cursor_x = text_rect.right + 2 if self.text else self.rect.x + 15
-                pygame.draw.line(surface, (50, 50, 50),
-                               (cursor_x, self.rect.y + 15),
-                               (cursor_x, self.rect.y + self.rect.height - 15),
-                               2)
+                # Posição do cursor: depois do texto ou no início se vazio
+                cursor_x_offset = text_surface.get_width() if self.text else 0
+                cursor_x = self.rect.x + self.padding + cursor_x_offset + 2 # 2 pixels após o texto
+                
+                # Limitar cursor_x para não sair do campo de input
+                max_cursor_x = self.rect.x + self.rect.width - self.padding
+                cursor_x = min(cursor_x, max_cursor_x)
+
+                cursor_y_start = self.rect.y + self.rect.height * 0.2
+                cursor_y_end = self.rect.y + self.rect.height * 0.8
+                pygame.draw.line(surface, self.text_color,
+                                 (cursor_x, cursor_y_start),
+                                 (cursor_x, cursor_y_end),
+                                 2)
 
 class AddUserScreen:
     def __init__(self, screen, user_data):
@@ -152,408 +184,384 @@ class AddUserScreen:
         self.user_data = user_data
         self.center_x = self.width // 2
         
-        # Cores do design neumorfista
         self.bg_color = COLORS["background"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
         
-        # Fontes
         self.title_font = pygame.font.SysFont('Arial', 32, bold=True)
         self.subtitle_font = pygame.font.SysFont('Arial', 20, bold=True)
         self.text_font = pygame.font.SysFont('Arial', 16)
         self.small_font = pygame.font.SysFont('Arial', 14)
         
-        # Estado do formulário
         self.selected_user_type = None
         self.selected_serie = None
-        self.selected_classe = None
-        self.selected_materia = None
+        # self.selected_materia = None # Removido selected_materia daqui, pois ele é definido no handle_events
         
-        # Mensagem de feedback
         self.message = None
         self.message_timer = 0
-        self.message_type = "info"  # "success", "error", "info"
+        self.message_type = "info"
         
-        # Dados simulados para verificar RA único
-        self.existing_ras = [12345, 67890, 11111, 22222]  # Simula RAs já cadastrados
+        self.existing_ras = [12345, 67890, 11111, 22222]
         
         self.setup_ui()
         
     def setup_ui(self):
-        # Painel principal
         self.main_panel = NeumorphicPanel(
             self.center_x - 380, 30, 
-            760, 540, 
+            760, self.height - 60, # Ajustado para ocupar mais altura
             self.bg_color, self.light_shadow, self.dark_shadow
         )
         
-        # Campos de entrada
+        input_width = 300
+        input_height = 40
+        input_x = self.center_x - input_width // 2
+        
         self.ra_input = NeumorphicInput(
-            self.center_x - 150, 80,
-            300, 40,
+            input_x, 80, input_width, input_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
-            "RA (somente numeros)", self.text_font,
+            "RA (somente números)", self.text_font, text_color=COLORS["text"],
             numeric_only=True, max_length=8
         )
         
         self.nome_input = NeumorphicInput(
-            self.center_x - 150, 140,
-            300, 40,
+            input_x, 140, input_width, input_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
-            "Nome completo", self.text_font,
+            "Nome completo", self.text_font, text_color=COLORS["text"],
             max_length=100
         )
         
         self.senha_input = NeumorphicInput(
-            self.center_x - 150, 200,
-            300, 40,
+            input_x, 200, input_width, input_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
-            "Senha inicial", self.text_font,
+            "Senha inicial", self.text_font, text_color=COLORS["text"],
             is_password=True, max_length=20
         )
         
-        # Botões de tipo de usuário
+        button_width = 110 # Aumentado para caber "PROFESSOR"
+        button_height = 35
+        user_type_y = 260
         self.aluno_button = NeumorphicButton(
-            self.center_x - 120, 260,
-            100, 35,
+            self.center_x - button_width - 10, user_type_y, button_width, button_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "ALUNO", self.text_font,
             is_toggle=True
         )
         
         self.professor_button = NeumorphicButton(
-            self.center_x + 20, 260,
-            100, 35,
+            self.center_x + 10, user_type_y, button_width, button_height,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "PROFESSOR", self.text_font,
             is_toggle=True
         )
-        
-        # Botões de série (para alunos)
-        self.serie_buttons = []
-        series = ["1 Ano", "2 Ano", "3 Ano"]
-        for i, serie in enumerate(series):
+
+        # --- Elementos para Aluno ---
+        # OBS: self.serie_buttons não está sendo inicializado.
+        # Se você for usar botões para série, precisará criá-los aqui. Exemplo:
+        self.serie_buttons = [] # Inicialize a lista
+        series_options = ["1º Ano", "2º Ano", "3º Ano"]
+        serie_button_y = 320
+        serie_button_width = 90
+        serie_button_start_x = self.center_x - (len(series_options) * (serie_button_width + 10) - 10) / 2 # Centralizado
+        for i, serie_text in enumerate(series_options):
             button = NeumorphicButton(
-                self.center_x - 150 + i * 100, 320,
-                90, 30,
+                serie_button_start_x + i * (serie_button_width + 10), serie_button_y,
+                serie_button_width, 30,
                 self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, serie, self.small_font,
+                self.accent_color, serie_text, self.small_font,
                 is_toggle=True
             )
             self.serie_buttons.append(button)
+
+        # Posição Y do turma_input ajustada para ficar abaixo dos botões de série
+        turma_input_y = serie_button_y + 30 + 20 # Abaixo dos botões de série + espaçamento
+
+        self.turma_input = NeumorphicInput(
+            self.center_x - 75, turma_input_y, # Ajustado para x e y
+            150, 35, # Largura e altura ajustadas
+            self.bg_color, self.light_shadow, self.dark_shadow,
+            "Nome da Turma (Ex: A)", self.text_font, text_color=COLORS["text"],
+            max_length=10 # Reduzido max_length para nome de turma
+        )
         
-        # Botões de classe (para alunos)
-        self.classe_buttons = []
-        classes = ["A", "B", "C", "D", "E"]
-        for i, classe in enumerate(classes):
-            button = NeumorphicButton(
-                self.center_x - 120 + i * 50, 370,
-                40, 30,
-                self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, classe, self.small_font,
-                is_toggle=True
-            )
-            self.classe_buttons.append(button)
-        
-        # Botões de matéria (para professores)
+        # --- Elementos para Professor ---
         self.materia_buttons = []
+        materia_button_y_start = 320 # Mesma altura inicial que os botões de série (condicionalmente exibidos)
+        materia_button_width = 90
+        materia_per_row = 4
+        materia_start_x = self.center_x - (materia_per_row * (materia_button_width + 10) - 10) / 2 # Centralizado
+
         for i, materia in enumerate(SUBJECTS):
-            row = i // 4
-            col = i % 4
+            row = i // materia_per_row
+            col = i % materia_per_row
             button = NeumorphicButton(
-                self.center_x - 200 + col * 100, 320 + row * 35,
-                90, 30,
+                materia_start_x + col * (materia_button_width + 10), materia_button_y_start + row * (30 + 5),
+                materia_button_width, 30,
                 self.bg_color, self.light_shadow, self.dark_shadow,
-                self.accent_color, materia[:6], self.small_font,
+                self.accent_color, materia[:8], self.small_font, # Ex: Matema.
                 is_toggle=True
             )
             self.materia_buttons.append(button)
         
-        # Botões de ação
+        action_button_y = self.main_panel.rect.bottom - 60 # Posição relativa ao painel
+        action_button_width = 120
+        
         self.salvar_button = NeumorphicButton(
-            self.center_x - 250, 500,
-            120, 40,
+            self.center_x - action_button_width - 70, action_button_y, # Ajustado
+            action_button_width, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             COLORS["success"], "SALVAR", self.text_font
         )
         
         self.limpar_button = NeumorphicButton(
-            self.center_x - 60, 500,
-            120, 40,
+            self.center_x - action_button_width/2 , action_button_y, # Centralizado
+            action_button_width, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "LIMPAR", self.text_font
         )
         
         self.voltar_button = NeumorphicButton(
-            self.center_x + 130, 500,
-            120, 40,
+            self.center_x + 70, action_button_y, # Ajustado
+            action_button_width, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (180, 180, 180), "VOLTAR", self.text_font
         )
-    
+
     def validate_form(self):
-        """Valida todos os campos do formulário"""
-        # Validar RA
         if not self.ra_input.text.strip():
-            return False, "RA e obrigatorio"
-        
+            return False, "RA é obrigatório."
         try:
             ra = int(self.ra_input.text)
-            if ra in self.existing_ras:
-                return False, "RA ja existe no sistema"
+            # Simulação de verificação no banco:
+            # conn = getConnection()
+            # cursor = conn.cursor()
+            # cursor.execute("SELECT RA FROM Usuarios WHERE RA = %s", (ra,))
+            # if cursor.fetchone():
+            #    return False, "RA já existe no sistema."
+            # cursor.close()
+            # conn.close()
+            if ra in self.existing_ras: # Mantenha simulação se não tiver DB conectado aqui
+                return False, "RA já existe no sistema."
         except ValueError:
-            return False, "RA deve conter apenas numeros"
+            return False, "RA deve conter apenas números."
         
-        # Validar nome
         if not self.nome_input.text.strip():
-            return False, "Nome e obrigatorio"
-        
+            return False, "Nome é obrigatório."
         if len(self.nome_input.text.strip()) < 3:
-            return False, "Nome deve ter pelo menos 3 caracteres"
+            return False, "Nome deve ter pelo menos 3 caracteres."
         
-        # Validar senha
         if not self.senha_input.text.strip():
-            return False, "Senha e obrigatoria"
-        
+            return False, "Senha é obrigatória."
         if len(self.senha_input.text) < 4:
-            return False, "Senha deve ter pelo menos 4 caracteres"
+            return False, "Senha deve ter pelo menos 4 caracteres."
         
-        # Validar tipo de usuário
         if not self.selected_user_type:
-            return False, "Selecione o tipo de usuario"
+            return False, "Selecione o tipo de usuário."
         
-        # Validações específicas por tipo
         if self.selected_user_type == "Aluno":
             if not self.selected_serie:
-                return False, "Selecione a serie do aluno"
-            if not self.selected_classe:
-                return False, "Selecione a classe do aluno"
+                return False, "Selecione a série do aluno."
+            if not self.turma_input.text.strip(): # CORRIGIDO: verificar .text.strip()
+                return False, "Escreva a turma do aluno."
         
         elif self.selected_user_type == "Professor":
+            # Encontrar a matéria selecionada
+            self.selected_materia = None
+            for i, btn in enumerate(self.materia_buttons):
+                if btn.is_active:
+                    self.selected_materia = SUBJECTS[i]
+                    break
             if not self.selected_materia:
-                return False, "Selecione a materia do professor"
+                return False, "Selecione a matéria do professor."
         
-        return True, "Formulario valido"
-    
+        return True, "Formulário válido."
+
     def save_user(self):
-        # Coleta dados do formulário do usuário, valida minimamente, e tenta salvar o novo usuário no banco de dados.
         ra_text = self.ra_input.text.strip()
         nome_text = self.nome_input.text.strip()
-        senha_text = self.senha_input.text # Lembre-se do ALERTA DE SEGURANÇA sobre hashing!
+        senha_text = self.senha_input.text # Senha não é "stripada" para manter espaços se desejado
 
+        # Validações básicas já feitas em validate_form, mas uma dupla checagem não faz mal
+        if not all([ra_text, nome_text, senha_text, self.selected_user_type]):
+             return False, "Erro: Campos principais faltando."
 
-        if not ra_text:
-            # self.show_message("Erro", "O campo RA não pode estar vazio.") # Exemplo de feedback
-            return False, "O campo RA não pode estar vazio."
-        if not nome_text:
-            # self.show_message("Erro", "O campo Nome não pode estar vazio.")
-            return False, "O campo Nome não pode estar vazio."
-        if not senha_text: # A senha não deve estar vazia
-            # self.show_message("Erro", "O campo Senha não pode estar vazio.")
-            return False, "O campo Senha não pode estar vazio."
-        if not self.selected_user_type:
-            # self.show_message("Erro", "Por favor, selecione o Tipo de Usuário.")
-            return False, "Nenhum tipo de usuário selecionado."
-        # Preparar dados do usuário
         user_data = {
-            "RA": int(self.ra_input.text),
-            "nome": self.nome_input.text.strip(),
-            "senha": self.senha_input.text,
-            "tipo": self.selected_user_type
-        }
-       
-        # Adicionar dados específicos do tipo
-        user_data = {
-            "RA": ra_text,
+            "RA": int(ra_text), # Convertido para int
             "nome": nome_text,
-            "senha": senha_text,
+            "senha": senha_text, # Lembre-se: HASH a senha antes de salvar em produção!
             "tipo": self.selected_user_type
         }
-
 
         if self.selected_user_type == "Aluno":
-            if not self.selected_serie or not self.selected_classe:
-                # self.show_message("Erro", "Série e Classe devem ser selecionados para Aluno.")
-                return False, "Série e Classe devem ser selecionados para Aluno."
-            user_data["turma"] = f"{self.selected_serie} {self.selected_classe}"
-            # Os campos "serie" e "classe" não são mais adicionados individualmente a user_data
-            # pois a função add_user_to_database espera apenas "turma" para Aluno.
+            if not self.selected_serie or not self.turma_input.text.strip():
+                return False, "Série e Turma devem ser preenchidos para Aluno."
+            # Combina série e turma no campo "turma"
+            user_data["turma"] = f"{self.selected_serie} {self.turma_input.text.strip().upper()}"
+        
         elif self.selected_user_type == "Professor":
-            if not self.selected_materia:
-                # self.show_message("Erro", "Matéria deve ser selecionada para Professor.")
+            if not self.selected_materia: # selected_materia é atualizado em validate_form ou handle_events
                 return False, "Matéria deve ser selecionada para Professor."
             user_data["materia"] = self.selected_materia
-        else:
-            # Esta condição é redundante se a validação de selected_user_type acima for suficiente.
-            # self.show_message("Erro", f"Tipo de usuário desconhecido: {self.selected_user_type}")
-            return False, f"Tipo de usuário desconhecido: {self.selected_user_type}"
-       
-        # --- CHAMADA PARA A FUNÇÃO DE BANCO DE DADOS ---
-        # A simulação e os prints foram removidos.
-        # A linha self.existing_ras.append() também foi removida.
-       
-        # Chame a função add_user_to_database, passando os dados do usuário
-        # e a sua função/método que retorna uma conexão com o banco.
-        # Adapte 'self.get_database_connection' para o nome real do seu método/função.
+        
         sucesso, mensagem = add_user_to_database(user_data, getConnection)
-       
+        
         if sucesso:
-            # self.show_message("Sucesso", mensagem) # Exemplo de feedback positivo
-            # Limpar campos do formulário, atualizar UI, etc.
-            # self.clear_form_fields()
-            pass # Adicione sua lógica pós-sucesso aqui
+            self.existing_ras.append(int(ra_text)) # Adiciona à lista de simulação
+            # self.show_message("Sucesso", mensagem) 
+            pass 
         else:
-            # self.show_message("Erro de Cadastro", mensagem) # Exemplo de feedback de erro
-            pass # Adicione sua lógica pós-falha aqui
-
+            # self.show_message("Erro de Cadastro", mensagem)
+            pass 
 
         return sucesso, mensagem
-    
+
     def clear_form(self):
-        """Limpa todos os campos do formulário"""
         self.ra_input.text = ""
         self.nome_input.text = ""
         self.senha_input.text = ""
+        self.turma_input.text = "" # CORRIGIDO: limpar texto do turma_input
         
         self.selected_user_type = None
         self.selected_serie = None
-        self.selected_classe = None
-        self.selected_materia = None
-        
-        # Resetar botões
+        # self.selected_materia = None # Não precisa resetar aqui, é determinado pelos botões
+
         self.aluno_button.is_active = False
         self.professor_button.is_active = False
         
-        for button in self.serie_buttons:
-            button.is_active = False
-        
-        for button in self.classe_buttons:
-            button.is_active = False
-            
+        # Resetar botões de série (se existirem e estiverem inicializados)
+        if hasattr(self, 'serie_buttons'):
+            for button in self.serie_buttons:
+                button.is_active = False
+                
+        # Resetar botões de matéria
         for button in self.materia_buttons:
             button.is_active = False
         
-        # Resetar inputs ativos
         self.ra_input.active = False
         self.nome_input.active = False
         self.senha_input.active = False
+        self.turma_input.active = False # CORRIGIDO: resetar estado active
         
-        self.message = "Formulario limpo"
+        self.message = "Formulário limpo."
         self.message_type = "info"
-        self.message_timer = 120
-    
+        self.message_timer = 120 # 2 segundos a 60 FPS
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
                 return {"action": "exit"}
-                
-            if event.type == MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                
-                # Verificar cliques nos campos de entrada
-                if self.ra_input.is_clicked(mouse_pos):
-                    self.ra_input.active = True
-                    self.nome_input.active = False
-                    self.senha_input.active = False
-                elif self.nome_input.is_clicked(mouse_pos):
-                    self.ra_input.active = False
-                    self.nome_input.active = True
-                    self.senha_input.active = False
-                elif self.senha_input.is_clicked(mouse_pos):
-                    self.ra_input.active = False
-                    self.nome_input.active = False
-                    self.senha_input.active = True
-                else:
-                    self.ra_input.active = False
-                    self.nome_input.active = False
-                    self.senha_input.active = False
-                
-                # Verificar cliques nos botões de tipo
-                if self.aluno_button.is_clicked(mouse_pos):
-                    self.selected_user_type = "Aluno"
-                    self.aluno_button.is_active = True
-                    self.professor_button.is_active = False
-                
-                if self.professor_button.is_clicked(mouse_pos):
-                    self.selected_user_type = "Professor"
-                    self.professor_button.is_active = True
-                    self.aluno_button.is_active = False
-                
-                # Verificar cliques nos botões de série (só se for aluno)
-                if self.selected_user_type == "Aluno":
-                    series = ["1 Ano", "2 Ano", "3 Ano"]
-                    for i, button in enumerate(self.serie_buttons):
-                        if button.is_clicked(mouse_pos):
-                            self.selected_serie = series[i]
-                            for j, other_button in enumerate(self.serie_buttons):
-                                other_button.is_active = (j == i)
-                
-                    # Verificar cliques nos botões de classe
-                    classes = ["A", "B", "C", "D", "E"]
-                    for i, button in enumerate(self.classe_buttons):
-                        if button.is_clicked(mouse_pos):
-                            self.selected_classe = classes[i]
-                            for j, other_button in enumerate(self.classe_buttons):
-                                other_button.is_active = (j == i)
-                
-                # Verificar cliques nos botões de matéria (só se for professor)
-                if self.selected_user_type == "Professor":
-                    for i, button in enumerate(self.materia_buttons):
-                        if button.is_clicked(mouse_pos):
-                            self.selected_materia = SUBJECTS[i]
-                            for j, other_button in enumerate(self.materia_buttons):
-                                other_button.is_active = (j == i)
-                
-                # Verificar cliques nos botões de ação
-                if self.salvar_button.is_clicked(mouse_pos):
-                    is_valid, message = self.validate_form()
-                    if is_valid:
-                        success, save_message = self.save_user()
-                        if success:
-                            self.message = save_message
-                            self.message_type = "success"
-                            self.message_timer = 180
-                            self.clear_form()
-                        else:
-                            self.message = save_message
-                            self.message_type = "error"
-                            self.message_timer = 180
-                    else:
-                        self.message = message
-                        self.message_type = "error"
-                        self.message_timer = 180
-                
-                if self.limpar_button.is_clicked(mouse_pos):
-                    self.clear_form()
-                
-                if self.voltar_button.is_clicked(mouse_pos):
-                    return {"action": "back_to_user_management"}
             
-            # Lidar com entrada de texto
+            active_inputs = [self.ra_input, self.nome_input, self.senha_input]
+            if self.selected_user_type == "Aluno":
+                active_inputs.append(self.turma_input)
+
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1: # Botão esquerdo do mouse
+                    mouse_pos = pygame.mouse.get_pos()
+                    
+                    clicked_on_input = False
+                    for input_field in active_inputs:
+                        if input_field.is_clicked(mouse_pos):
+                            for other_input in active_inputs: # Desativa todos
+                                other_input.active = False
+                            input_field.active = True # Ativa o clicado
+                            clicked_on_input = True
+                            break
+                    if not clicked_on_input: # Se clicou fora de qualquer input ativo
+                        for input_field in active_inputs:
+                            input_field.active = False
+                    
+                    if self.aluno_button.is_clicked(mouse_pos):
+                        self.selected_user_type = "Aluno"
+                        self.aluno_button.is_active = True
+                        self.professor_button.is_active = False
+                        # Limpar seleção de matéria ao trocar para aluno
+                        for btn in self.materia_buttons: btn.is_active = False
+                        self.selected_materia = None 
+                    
+                    elif self.professor_button.is_clicked(mouse_pos):
+                        self.selected_user_type = "Professor"
+                        self.professor_button.is_active = True
+                        self.aluno_button.is_active = False
+                        # Limpar seleção de série e turma ao trocar para professor
+                        for btn in self.serie_buttons: btn.is_active = False
+                        self.selected_serie = None
+                        self.turma_input.text = ""
+                        self.turma_input.active = False
+
+                    if self.selected_user_type == "Aluno":
+                        if hasattr(self, 'serie_buttons'): # Checa se serie_buttons existe
+                            for i, button in enumerate(self.serie_buttons):
+                                if button.is_clicked(mouse_pos):
+                                    self.selected_serie = series_options[i] # Use a lista de onde os textos vieram
+                                    for j, other_button in enumerate(self.serie_buttons):
+                                        other_button.is_active = (j == i)
+                                    break # Sai do loop após encontrar o botão clicado
+                    
+                    elif self.selected_user_type == "Professor":
+                        for i, button in enumerate(self.materia_buttons):
+                            if button.is_clicked(mouse_pos):
+                                self.selected_materia = SUBJECTS[i] # SUBJECTS é a lista original
+                                for j, other_button in enumerate(self.materia_buttons):
+                                    other_button.is_active = (j == i)
+                                break # Sai do loop
+
+                    if self.salvar_button.is_clicked(mouse_pos):
+                        self.salvar_button.pressed = True # Para feedback visual rápido
+                        is_valid, message = self.validate_form()
+                        if is_valid:
+                            success, save_message = self.save_user()
+                            self.message = save_message
+                            self.message_type = "success" if success else "error"
+                            if success:
+                                self.clear_form() # Limpa apenas em sucesso total
+                        else:
+                            self.message = message
+                            self.message_type = "error"
+                        self.message_timer = 180
+                    
+                    elif self.limpar_button.is_clicked(mouse_pos):
+                        self.limpar_button.pressed = True
+                        self.clear_form()
+                    
+                    elif self.voltar_button.is_clicked(mouse_pos):
+                        self.voltar_button.pressed = True
+                        return {"action": "back_to_user_management"}
+            
+            if event.type == MOUSEBUTTONUP: # Resetar estado 'pressed' dos botões
+                if event.button == 1:
+                    self.salvar_button.pressed = False
+                    self.limpar_button.pressed = False
+                    self.voltar_button.pressed = False
+
             if event.type == KEYDOWN:
-                if self.ra_input.active:
+                current_active_input = None
+                if self.ra_input.active: current_active_input = self.ra_input
+                elif self.nome_input.active: current_active_input = self.nome_input
+                elif self.senha_input.active: current_active_input = self.senha_input
+                elif self.turma_input.active and self.selected_user_type == "Aluno": # ADICIONADO: turma_input
+                    current_active_input = self.turma_input
+
+                if current_active_input:
                     if event.key == K_BACKSPACE:
-                        self.ra_input.text = self.ra_input.text[:-1]
-                    elif event.unicode.isdigit() and len(self.ra_input.text) < self.ra_input.max_length:
-                        self.ra_input.text += event.unicode
-                
-                elif self.nome_input.active:
-                    if event.key == K_BACKSPACE:
-                        self.nome_input.text = self.nome_input.text[:-1]
-                    elif len(self.nome_input.text) < self.nome_input.max_length:
-                        self.nome_input.text += event.unicode
-                
-                elif self.senha_input.active:
-                    if event.key == K_BACKSPACE:
-                        self.senha_input.text = self.senha_input.text[:-1]
-                    elif len(self.senha_input.text) < self.senha_input.max_length:
-                        self.senha_input.text += event.unicode
+                        current_active_input.text = current_active_input.text[:-1]
+                    elif event.key == K_RETURN or event.key == K_KP_ENTER:
+                        # Opcional: Pular para próximo campo ou salvar
+                        pass 
+                    elif len(current_active_input.text) < current_active_input.max_length:
+                        char = event.unicode
+                        if current_active_input == self.ra_input:
+                            if char.isdigit():
+                                current_active_input.text += char
+                        elif current_active_input == self.turma_input: # Turma pode ter letras e números
+                             if char.isalnum(): # Permitir alfanuméricos para turma (Ex: A, B, 1, 2)
+                                current_active_input.text += char.upper() # Opcional: converter para maiúsculo
+                        else: # Para nome e senha, permite mais caracteres
+                            current_active_input.text += char
         
         return {"action": "none"}
     
     def update(self):
-        # Atualizar timer de mensagem
         if self.message_timer > 0:
             self.message_timer -= 1
             if self.message_timer == 0:
@@ -563,94 +571,102 @@ class AddUserScreen:
         self.screen.fill(self.bg_color)
         self.main_panel.draw(self.screen)
         
-        # Título
-        title_text = self.title_font.render("Adicionar Usuario", True, (60, 60, 60))
-        title_rect = title_text.get_rect(center=(self.center_x, 55))
+        title_text = self.title_font.render("Adicionar Usuário", True, COLORS["text"])
+        title_rect = title_text.get_rect(center=(self.center_x, self.main_panel.rect.top + 30))
         self.screen.blit(title_text, title_rect)
         
-        # Labels dos campos
-        ra_label = self.small_font.render("RA:", True, (80, 80, 80))
-        self.screen.blit(ra_label, (self.center_x - 190, 85))
+        # Labels e Inputs
+        label_x_offset = self.ra_input.rect.left - 10 # Posição X dos labels, à esquerda dos inputs
         
-        nome_label = self.small_font.render("Nome:", True, (80, 80, 80))
-        self.screen.blit(nome_label, (self.center_x - 190, 145))
-        
-        senha_label = self.small_font.render("Senha:", True, (80, 80, 80))
-        self.screen.blit(senha_label, (self.center_x - 190, 205))
-        
-        tipo_label = self.small_font.render("Tipo de Usuario:", True, (80, 80, 80))
-        self.screen.blit(tipo_label, (self.center_x - 120, 245))
-        
-        # Desenhar campos de entrada
+        ra_label = self.small_font.render("RA:", True, COLORS["text"])
+        self.screen.blit(ra_label, (label_x_offset - ra_label.get_width(), self.ra_input.rect.centery - ra_label.get_height()//2))
         self.ra_input.draw(self.screen)
+        
+        nome_label = self.small_font.render("Nome:", True, COLORS["text"])
+        self.screen.blit(nome_label, (label_x_offset - nome_label.get_width(), self.nome_input.rect.centery - nome_label.get_height()//2))
         self.nome_input.draw(self.screen)
+        
+        senha_label = self.small_font.render("Senha:", True, COLORS["text"])
+        self.screen.blit(senha_label, (label_x_offset - senha_label.get_width(), self.senha_input.rect.centery - senha_label.get_height()//2))
         self.senha_input.draw(self.screen)
         
-        # Desenhar botões de tipo
+        tipo_label_y = self.aluno_button.rect.top - 20
+        tipo_label = self.subtitle_font.render("Tipo de Usuário:", True, COLORS["text"])
+        self.screen.blit(tipo_label, (self.center_x - tipo_label.get_width()//2, tipo_label_y))
+        
         self.aluno_button.draw(self.screen)
         self.professor_button.draw(self.screen)
         
-        # Desenhar campos específicos baseado no tipo selecionado
+        # Campos específicos
+        base_y_specific_fields = self.aluno_button.rect.bottom + 25
+
         if self.selected_user_type == "Aluno":
-            # Labels e botões de série
-            serie_label = self.small_font.render("Serie:", True, (80, 80, 80))
-            self.screen.blit(serie_label, (self.center_x - 150, 305))
+            serie_label_y = base_y_specific_fields
+            serie_label_text = self.small_font.render("Série:", True, COLORS["text"])
+            # Centralizar o label "Série:" acima dos botões de série
+            serie_label_x = self.center_x - serie_label_text.get_width() // 2
+            self.screen.blit(serie_label_text, (serie_label_x, serie_label_y))
             
-            for button in self.serie_buttons:
-                button.draw(self.screen)
+            if hasattr(self, 'serie_buttons'):
+                for button in self.serie_buttons:
+                    button.draw(self.screen)
             
-            # Labels e botões de classe
-            classe_label = self.small_font.render("Classe:", True, (80, 80, 80))
-            self.screen.blit(classe_label, (self.center_x - 120, 355))
-            
-            for button in self.classe_buttons:
-                button.draw(self.screen)
+            # Label e Input para Turma
+            turma_label_y = self.turma_input.rect.top - 20 # Label acima do input da turma
+            turma_label = self.small_font.render("Turma:", True, COLORS["text"])
+            self.screen.blit(turma_label, (self.center_x - turma_label.get_width()//2, turma_label_y))
+            self.turma_input.draw(self.screen) # <<< ADICIONADO O DESENHO DO TURMA_INPUT
         
         elif self.selected_user_type == "Professor":
-            # Labels e botões de matéria
-            materia_label = self.small_font.render("Materia:", True, (80, 80, 80))
-            self.screen.blit(materia_label, (self.center_x - 200, 305))
-            
+            materia_label_y = base_y_specific_fields
+            materia_label_text = self.small_font.render("Matéria que Leciona:", True, COLORS["text"])
+            materia_label_x = self.center_x - materia_label_text.get_width() // 2
+            self.screen.blit(materia_label_text, (materia_label_x, materia_label_y))
+
             for button in self.materia_buttons:
                 button.draw(self.screen)
         
-        # Desenhar botões de ação
         self.salvar_button.draw(self.screen)
         self.limpar_button.draw(self.screen)
         self.voltar_button.draw(self.screen)
         
-        # Desenhar mensagem de feedback
-        if self.message:
-            color = {
-                "success": COLORS["success"],
-                "error": COLORS["error"],
-                "info": (100, 100, 100)
-            }.get(self.message_type, (100, 100, 100))
+        if self.message and self.message_timer > 0:
+            color_map = {
+                "success": COLORS["success"], "error": COLORS["error"], "info": COLORS["text"]
+            }
+            msg_color = color_map.get(self.message_type, COLORS["text"])
+            message_surf = self.text_font.render(self.message, True, msg_color)
             
-            message_surf = self.text_font.render(self.message, True, color)
-            message_rect = message_surf.get_rect(center=(self.center_x, 470))
+            # Posicionar mensagem acima dos botões de ação
+            msg_y = self.salvar_button.rect.top - message_surf.get_height() - 15
+            message_rect = message_surf.get_rect(center=(self.center_x, msg_y))
             self.screen.blit(message_surf, message_rect)
         
-        # Info do usuário logado
-        user_info = f"Logado como: {self.user_data['username']} (Professor)"
-        user_surf = self.small_font.render(user_info, True, (120, 120, 120))
-        user_rect = user_surf.get_rect(bottomright=(self.width - 20, self.height - 10))
-        self.screen.blit(user_surf, user_rect)
+        # Info do usuário logado (se necessário)
+        # user_info = f"Logado como: {self.user_data.get('username', 'N/A')} ({self.user_data.get('role', 'N/A')})"
+        # user_surf = self.small_font.render(user_info, True, (120, 120, 120))
+        # user_rect = user_surf.get_rect(bottomright=(self.width - 10, self.height - 5))
+        # self.screen.blit(user_surf, user_rect)
         
         pygame.display.flip()
     
     def run(self):
         clock = pygame.time.Clock()
-        
+        # Definir series_options aqui para ser acessível no handle_events
+        # Esta é uma forma de contornar, idealmente seria uma constante ou atributo da classe
+        # Se você já definiu self.serie_buttons com os textos corretos, pode usá-los.
+        global series_options 
+        series_options = ["1º Ano", "2º Ano", "3º Ano"] # Certifique-se que esta lista corresponde aos botões
+
         while self.running:
             result = self.handle_events()
             
-            if result["action"] != "none":
+            if result and result.get("action") != "none":
                 self.running = False
-                return result
+                return result # Retorna o dicionário da ação
             
             self.update()
             self.draw()
             clock.tick(60)
         
-        return {"action": "exit"}
+        return {"action": "exit"} # Retorno padrão se o loop terminar por self.running = False
