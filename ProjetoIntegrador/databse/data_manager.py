@@ -786,3 +786,82 @@ def update_question_in_db(question_id, question_update_data, getConnection):
     finally:
         if cursor: cursor.close()
         if connection and connection.is_connected(): connection.close()
+
+
+def update_user_in_db(user_ra, user_type, fields_to_update, getConnection):
+    # Atualiza os dados de um usuário (aluno ou professor) no banco de dados.
+    connection = None
+    cursor = None
+    
+    if not fields_to_update: # Nenhum campo para atualizar
+        return False, "Nenhum dado fornecido para atualização."
+
+    table_name = ""
+    id_column_name = ""
+    column_map = {} # Mapeia chaves do dict para nomes de colunas no DB
+
+    if user_type == "Aluno":
+        table_name = "alunos"
+        id_column_name = "aluno_RA"
+        column_map = {
+            "nome": "nome_aluno",
+            "turma": "turma", # Assumindo que 'turma' é a coluna no DB para Alunos
+            "senha": "senha_aluno"
+        }
+    elif user_type == "Professor":
+        table_name = "professores"
+        id_column_name = "prof_RA"
+        column_map = {
+            "nome": "nome_prof",
+            "materia": "materia", # Usuário confirmou 'materia' sem acento no DB
+            "senha": "senha_prof"
+        }
+    else:
+        return False, f"Tipo de usuário desconhecido: {user_type}"
+
+    set_clauses = []
+    sql_values = []
+
+    for key, value in fields_to_update.items():
+        db_column = column_map.get(key)
+        if db_column: # Se a chave do dicionário tem um mapeamento de coluna válido
+            set_clauses.append(f"{db_column} = %s")
+            sql_values.append(value)
+        # else: Ignora chaves não mapeadas ou loga um aviso
+
+    if not set_clauses:
+        return False, "Nenhum campo válido para atualização foi fornecido."
+
+    sql_values.append(user_ra) # Adiciona o RA para a cláusula WHERE
+
+    try:
+        connection = getConnection()
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        
+        cursor = connection.cursor()
+
+        sql_update_user = f"UPDATE {table_name} SET {', '.join(set_clauses)} WHERE {id_column_name} = %s"
+        
+        # Para depuração:
+        # print(f"SQL UPDATE: {sql_update_user}")
+        # print(f"Valores para UPDATE: {tuple(sql_values)}")
+
+        cursor.execute(sql_update_user, tuple(sql_values))
+        connection.commit()
+        rows_affected = cursor.rowcount
+
+        if rows_affected > 0:
+            return True, f"{user_type} RA {user_ra} atualizado(a) com sucesso."
+        else:
+            return False, f"Nenhum {user_type.lower()} encontrado com RA {user_ra}, ou os dados não foram alterados."
+
+    except mysql.connector.Error as err:
+        if connection: connection.rollback()
+        return False, f"Erro de BD ao atualizar {user_type.lower()} RA {user_ra}: {err}"
+    except Exception as e:
+        if connection: connection.rollback()
+        return False, f"Erro inesperado ao atualizar {user_type.lower()} RA {user_ra}: {e}"
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()

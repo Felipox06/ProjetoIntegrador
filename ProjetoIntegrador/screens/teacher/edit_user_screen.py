@@ -4,6 +4,10 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import search_all_users_from_db
+from databse.db_connector import getConnection
+from databse.data_manager import update_user_in_db
+import mysql.connector
 
 # Importar config se existir
 try:
@@ -234,14 +238,7 @@ class EditUserScreen:
         self.message_type = "info"
         
         # Dados simulados (em produção, viriam do banco)
-        self.all_users = [
-            {"RA": 12345, "nome": "Joao Silva", "tipo": "Aluno", "serie": "2 Ano", "classe": "A", "senha": "1234"},
-            {"RA": 67890, "nome": "Maria Santos", "tipo": "Professor", "materia": "Matematica", "senha": "5678"},
-            {"RA": 11111, "nome": "Ana Costa", "tipo": "Aluno", "serie": "1 Ano", "classe": "B", "senha": "1111"},
-            {"RA": 22222, "nome": "Carlos Oliveira", "tipo": "Professor", "materia": "Fisica", "senha": "2222"},
-            {"RA": 33333, "nome": "Lucia Ferreira", "tipo": "Aluno", "serie": "3 Ano", "classe": "C", "senha": "3333"},
-            {"RA": 44444, "nome": "Pedro Alves", "tipo": "Professor", "materia": "Historia", "senha": "4444"},
-        ]
+        self.all_users = search_all_users_from_db(getConnection)
         
         self.filtered_users = self.all_users.copy()
         
@@ -486,49 +483,101 @@ class EditUserScreen:
         
         return True, "Formulario valido"
     
+    def reload_all_users_from_db(self):
+        print("AVISO: Implementar reload_all_users_from_db() para recarregar self.all_users do banco.")
+
+
     def save_user(self):
-        """Simula salvamento das alterações (preparado para integração com banco)"""
-        updated_data = {
-            "RA": self.selected_user['RA'],
-            "nome": self.nome_input.text.strip(),
-            "tipo": self.selected_user['tipo']
-        }
+        # Salva as alterações do usuário editado no banco de dados.
         
-        # Adicionar senha se foi alterada
-        if self.senha_input.text:
-            updated_data["senha"] = self.senha_input.text
+        if not self.selected_user or 'RA' not in self.selected_user or 'tipo' not in self.selected_user:
+            print("Erro: Nenhum usuário selecionado para editar ou dados de RA/tipo ausentes.")
+            return False, "Nenhum usuário selecionado ou dados essenciais ausentes."
+        fields_to_send_to_db = {}
         
-        # Adicionar dados específicos do tipo
-        if self.selected_user['tipo'] == 'Aluno':
-            updated_data["serie"] = self.selected_serie
-            updated_data["classe"] = self.selected_classe
+        # Nome (sempre atualizado)
+        novo_nome = self.nome_input.text.strip()
+        if novo_nome: # Garante que o nome não está vazio
+            fields_to_send_to_db["nome"] = novo_nome
         else:
-            updated_data["materia"] = self.selected_materia
+            # self.show_ui_message("Erro", "O nome não pode estar vazio.")
+            print("Erro: O nome não pode estar vazio.")
+            return False, "O nome não pode estar vazio."
+
+        # Senha (apenas se alterada/preenchida)
+        if self.senha_input.text: # Não use .strip() aqui se uma senha com espaços for permitida
+            fields_to_send_to_db["senha"] = self.senha_input.text
         
-        # SIMULAÇÃO - Em produção, aqui faria o UPDATE no banco
-        print("=== DADOS PARA ATUALIZAR NO BANCO ===")
-        print(f"UPDATE usuarios SET nome_usuario='{updated_data['nome']}'", end="")
-        if 'senha' in updated_data:
-            print(f", senha_usuario='{updated_data['senha']}'", end="")
-        print(f" WHERE RA={updated_data['RA']}")
+        # Campos específicos do tipo
+        user_tipo = self.selected_user['tipo']
+        if user_tipo == 'Aluno':
+            # Para alunos, a coluna no DB é 'turma', que é a combinação de série e classe
+            if self.selected_serie and self.selected_classe: # Garante que ambos foram selecionados na UI
+                turma_completa = f"{self.selected_serie} {self.selected_classe}"
+                fields_to_send_to_db["turma"] = turma_completa
+            else:
+                # self.show_ui_message("Erro", "Série e Classe são obrigatórias para Aluno.")
+                print("Erro: Série e Classe são obrigatórias para Aluno.")
+                return False, "Série e Classe são obrigatórias para Aluno."
+        elif user_tipo == 'Professor':
+            if self.selected_materia: # Garante que a matéria foi selecionada
+                fields_to_send_to_db["materia"] = self.selected_materia
+            else:
+                # self.show_ui_message("Erro", "Matéria é obrigatória para Professor.")
+                print("Erro: Matéria é obrigatória para Professor.")
+                return False, "Matéria é obrigatória para Professor."
         
-        if updated_data['tipo'] == 'Aluno':
-            print(f"UPDATE alunos SET serie='{updated_data['serie']}', classe='{updated_data['classe']}' WHERE aluno_RA={updated_data['RA']}")
+        if not fields_to_send_to_db: # Se apenas RA e tipo foram preenchidos, mas nada para mudar
+            # self.show_ui_message("Info", "Nenhum dado alterado.")
+            print("Nenhum dado alterado.")
+            return True, "Nenhum dado alterado." # Considera sucesso, pois não houve erro
+
+
+        # --- CHAMADA REAL AO BANCO PARA ATUALIZAR ---
+        user_ra_to_update = self.selected_user['RA']
+        
+        try:
+            # Adapte 'self.get_connection' ao seu método/função real de obter conexão
+            success_db, message_db = update_user_in_db(
+                user_ra_to_update,
+                user_tipo,
+                fields_to_send_to_db,
+                getConnection
+            )
+        except NameError as ne:
+            # self.show_ui_message("Erro de Configuração", str(ne))
+            print(f"Erro de Configuração: {ne}")
+            return False, f"Erro de Configuração: {ne}"
+        except Exception as e:
+            # self.show_ui_message("Erro Inesperado", str(e))
+            print(f"Erro Inesperado no Sistema: {e}")
+            return False, f"Erro Inesperado no Sistema: {e}"
+
+        # Processar o resultado
+        if success_db:
+            # self.show_ui_message("Sucesso", message_db)
+            print(f"Sucesso no DB: {message_db}")
+            
+            # Atualizar a lista local self.all_users e self.filtered_users
+            print("Recarregando lista de usuários após atualização...")
+            self.reload_all_users_from_db() # Chama o método para recarregar self.all_users
+            self.apply_filter() # Re-aplica os filtros da UI
+            
+            # Opcional: Atualizar self.selected_user com os dados que foram efetivamente salvos
+            # Isso pode ser útil se a UI ainda exibe detalhes do usuário selecionado.
+            # Você pode reconstruir o selected_user ou encontrar o usuário atualizado em self.all_users.
+            # Ex:
+            # for i, user in enumerate(self.all_users):
+            # if user['RA'] == user_ra_to_update:
+            # self.selected_user.update(user) # Atualiza com os dados do banco
+            # break
+            
         else:
-            print(f"UPDATE professores SET materia='{updated_data['materia']}' WHERE prof_RA={updated_data['RA']}")
+            # self.show_ui_message("Erro de Atualização", message_db)
+            print(f"Erro no DB ao atualizar usuário: {message_db}")
+
+        return success_db, message_db
         
-        print("=====================================")
-        
-        # Atualizar na lista local
-        for i, user in enumerate(self.all_users):
-            if user['RA'] == updated_data['RA']:
-                self.all_users[i].update(updated_data)
-                break
-        
-        # Reaplicar filtro
-        self.apply_filter()
-        
-        return True, f"Usuario {updated_data['nome']} atualizado com sucesso!"
     
     def cancel_edit(self):
         """Cancela a edição atual"""
