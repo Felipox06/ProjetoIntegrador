@@ -269,7 +269,7 @@ def search_ranking_data_from_db(get_connection_func, serie_filter=None):
     col_pontuacao = "pont_total"
 
     try:
-        connection = get_connection_func() # Chama a função de conexão passada
+        connection = getConnection() # Chama a função de conexão passada
         if not connection:
             print("Erro (data_manager): Não foi possível conectar ao banco.")
             return lista_alunos_ranking
@@ -540,3 +540,82 @@ def search_all_users_from_db(get_connection_func):
             except mysql.connector.Error: pass
             
     return all_users_list
+
+
+def update_class_in_db(class_id, new_class_data, getConnection):
+    # Atualiza os dados de uma turma existente no banco de dados.
+    connection = None
+    cursor = None
+    rows_affected = 0
+
+    # Nomes da tabela e colunas (ajuste se os nomes no seu banco forem diferentes)
+    table_name = "turmas"
+    id_column_name = "id_turma"
+    col_nome = "nome_turma"
+    col_serie = "serie_turma"
+    col_periodo = "periodo_turma"
+    col_ano = "ano_letivo"
+
+    try:
+        connection = getConnection()
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        
+        cursor = connection.cursor()
+
+        # Montar a query UPDATE dinamicamente com base nos dados fornecidos
+        # Para este exemplo, vamos assumir que todos os campos de new_class_data são para serem atualizados
+        sql_update_class = f"""
+            UPDATE {table_name}
+            SET {col_nome} = %s, 
+                {col_serie} = %s, 
+                {col_periodo} = %s, 
+                {col_ano} = %s
+            WHERE {id_column_name} = %s
+        """
+        
+        valores_para_update = (
+            new_class_data.get('nome_turma'),
+            new_class_data.get('serie_turma'),
+            new_class_data.get('periodo_turma'),
+            new_class_data.get('ano_letivo'),
+            class_id 
+        )
+
+        # Para depuração:
+        # print(f"SQL UPDATE: {sql_update_class}")
+        # print(f"Valores para UPDATE: {valores_para_update}")
+
+        cursor.execute(sql_update_class, valores_para_update)
+        connection.commit()
+        rows_affected = cursor.rowcount
+
+        if rows_affected > 0:
+            return True, f"Turma ID {class_id} atualizada com sucesso."
+        else:
+            # Isso pode acontecer se o ID não existir ou se os dados novos forem idênticos aos existentes.
+            return False, f"Nenhuma turma encontrada com o ID {class_id} para atualizar, ou os dados não foram alterados."
+
+    except mysql.connector.Error as err:
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (update_class_in_db) durante o rollback: {rb_err}")
+        return False, f"Erro de banco de dados ao atualizar turma ID {class_id}: {err}"
+    except Exception as e:
+        if connection:
+            try:
+                connection.rollback()
+            except mysql.connector.Error as rb_err:
+                print(f"Erro (update_class_in_db) durante o rollback (exceção genérica): {rb_err}")
+        return False, f"Ocorreu um erro inesperado ao atualizar turma ID {class_id}: {e}"
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass

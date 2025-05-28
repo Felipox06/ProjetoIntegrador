@@ -3,7 +3,10 @@
 
 import pygame
 import sys
+import mysql.connector
 from pygame.locals import *
+from databse.data_manager import update_class_in_db
+from databse.db_connector import getConnection
 
 # Importar config se existir
 try:
@@ -393,59 +396,74 @@ class ClassEditScreen:
         self.year_input.text = str(self.selected_class["year"])
     
     def load_classes(self):
-        """Função mockup para carregar turmas do banco"""
-        # No código real, faria uma consulta ao banco de dados
-        classes = [
-            {
-                "id": 1,
-                "name": "3º Ano A",
-                "grade": "3º Ano",
-                "shift": "Manhã",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 2,
-                "name": "2º Ano B",
-                "grade": "2º Ano",
-                "shift": "Tarde",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 3,
-                "name": "1º Ano C",
-                "grade": "1º Ano",
-                "shift": "Manhã",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 4,
-                "name": "3º Ano B",
-                "grade": "3º Ano",
-                "shift": "Noite",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 5,
-                "name": "2º Ano A",
-                "grade": "2º Ano",
-                "shift": "Manhã",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-            {
-                "id": 6,
-                "name": "1º Ano A",
-                "grade": "1º Ano",
-                "shift": "Tarde",
-                "year": 2025,
-                "teacher": "Professor Silva"
-            },
-        ]
-        return classes
+        """
+        Carrega a lista de turmas do banco de dados.
+        """
+        loaded_classes = []
+        connection = None
+        cursor = None
+
+        # Nomes das colunas na sua tabela 'turmas'
+        # Ajuste estes nomes se as colunas no seu banco de dados forem diferentes.
+        col_db_id = "id_turma"
+        col_db_name_identifier = "nome_turma"  # Ex: "A", "B" (o nome/letra da turma)
+        col_db_grade = "serie_turma"        # Ex: "1º Ano", "3º Ano" (a série)
+        col_db_shift = "periodo_turma"      # Ex: "Manhã"
+        col_db_year = "ano_letivo"          # Ex: 2024
+
+        try:
+            connection = getConnection()
+            if not connection:
+                print("Erro (load_classes): Não foi possível conectar ao banco de dados.")
+                return loaded_classes # Retorna lista vazia se a conexão falhar
+
+            cursor = connection.cursor()
+
+            # Query para buscar as turmas, ordenadas para uma exibição consistente
+            query = f"""
+                SELECT {col_db_id}, {col_db_name_identifier}, {col_db_grade}, {col_db_shift}, {col_db_year}
+                FROM turmas
+                ORDER BY {col_db_year} DESC, {col_db_grade}, {col_db_name_identifier}
+            """
+            
+            cursor.execute(query)
+            database_results = cursor.fetchall() # Pega todas as linhas retornadas
+
+            for row in database_results:
+                # Desempacota os resultados da linha do banco
+                db_id = row[0]
+                db_name_id = row[1]    # Ex: "A"
+                db_grade_val = row[2]  # Ex: "3º Ano"
+                db_shift_val = row[3]  # Ex: "Manhã"
+                db_year_val = row[4]   # Ex: 2025
+
+                # Monta o nome de exibição composto (ex: "3º Ano A")
+                # Este será o valor para a chave "name" no dicionário final
+                display_name = f"{db_grade_val} {db_name_id}"
+
+                # Cria o dicionário no formato que sua UI espera (baseado no seu mock)
+                class_dict = {
+                    "id": db_id,
+                    "name": display_name,       # Nome composto para exibição
+                    "grade": db_grade_val,    # A série (para consistência com seu mock)
+                    "shift": db_shift_val,    # Período
+                    "year": db_year_val       # Ano letivo
+                    # O campo "teacher" foi omitido, pois decidimos não incluí-lo na tabela 'turmas'
+                }
+                loaded_classes.append(class_dict)
+
+        except mysql.connector.Error as err:
+            print(f"Erro (load_classes) ao buscar turmas do banco: {err}")
+            # Em uma aplicação real, você pode querer logar o erro ou mostrar uma mensagem mais amigável na UI
+        except Exception as e:
+            print(f"Erro inesperado (load_classes): {e}")
+        finally:
+            if cursor:
+                try:
+                    connection.close()
+                except mysql.connector.Error: pass # Ignora erros ao fechar a conexão (opcional)
+        
+        return loaded_classes
     
     def validate_form(self):
         """Verificar se todos os campos necessários estão preenchidos"""
@@ -476,38 +494,83 @@ class ClassEditScreen:
         return True, "Formulário válido"
     
     def save_edited_class(self):
-        """Salvar as alterações na turma"""
-        is_valid, message = self.validate_form()
+        """Salvar as alterações da turma editada no banco de dados."""
+        is_valid, validation_message = self.validate_form() # Mensagem da validação
         if not is_valid:
-            self.message = message
+            self.message = validation_message # Usa a mensagem do validate_form
             self.message_timer = 180  # 3 segundos
+            print(f"Erro de validação ao salvar turma editada: {validation_message}")
             return False
         
-        # Preparar dados atualizados
-        updated_data = {
-            "id": self.selected_class["id"],
-            "name": self.class_name_input.text.strip(),
-            "grade": self.selected_grade,
-            "shift": self.selected_shift,
-            "year": int(self.year_input.text),
-            "teacher": self.selected_class["teacher"]
+        if not self.selected_class or "id" not in self.selected_class:
+            self.message = "Nenhuma turma selecionada para editar ou ID ausente."
+            self.message_timer = 180
+            print(self.message)
+            return False
+
+        # Preparar dados atualizados para o banco de dados
+        # As chaves aqui devem corresponder ao que update_class_in_db espera
+        # e aos nomes das colunas do banco (ou serem mapeadas dentro de update_class_in_db)
+        data_for_db_update = {
+            "nome_turma": self.class_name_input.text.strip(), # Valor do input para nome/identificador
+            "serie_turma": self.selected_grade,              # Valor do seletor de série
+            "periodo_turma": self.selected_shift,            # Valor do seletor de período
+            "ano_letivo": int(self.year_input.text)        # Valor do input de ano
         }
         
-        # Atualizar na lista local (simulação)
-        for i, cls in enumerate(self.classes):
-            if cls["id"] == self.selected_class["id"]:
-                self.classes[i] = updated_data
-                self.selected_class = updated_data
-                break
-        
-        # Simulação de atualização no banco de dados
-        print(f"Turma atualizada: {updated_data}")
-        
-        # Mostrar mensagem de sucesso
-        self.message = "Turma atualizada com sucesso!"
-        self.message_timer = 120  # 2 segundos
-        
-        return True
+        class_id_to_update = self.selected_class["id"]
+
+        # --- CHAMADA REAL AO BANCO PARA ATUALIZAR ---
+        try:
+            # Adapte 'self.get_connection' ao seu método/função real de obter conexão
+            # Certifique-se de que 'update_class_in_db' está importada
+            was_successful, db_message = update_class_in_db(
+                class_id_to_update, 
+                data_for_db_update, 
+                getConnection
+            )
+
+        except NameError as ne:
+            self.message = f"Erro de configuração: {ne}"
+            self.message_timer = 180
+            print(self.message)
+            return False
+        except Exception as e:
+            self.message = f"Erro inesperado no sistema ao salvar turma: {e}"
+            self.message_timer = 180
+            print(self.message)
+            return False
+
+        # Processar o resultado da operação no banco de dados
+        if was_successful:
+            self.message = db_message # Mensagem de sucesso do banco
+            self.message_timer = 120
+            
+            # CRUCIAL: Recarregar a lista de turmas da UI para refletir a alteração
+            print("Recarregando lista de turmas após atualização...")
+            self.classes = self.load_classes() # Assume que self.classes é o que sua UI usa
+
+            # Atualizar o self.selected_class com os novos dados se a UI o utiliza diretamente
+            # ou simplesmente limpar a seleção/fechar o formulário de edição.
+            # Para atualizar self.selected_class para refletir na UI imediatamente (se necessário):
+            updated_display_data = {
+                "id": class_id_to_update,
+                "name": f"{data_for_db_update['serie_turma']} {data_for_db_update['nome_turma']}", # Nome de exibição
+                "grade": data_for_db_update['serie_turma'],
+                "shift": data_for_db_update['periodo_turma'],
+                "year": data_for_db_update['ano_letivo']
+                # "teacher" foi removido
+            }
+            self.selected_class = updated_display_data # Atualiza a seleção local
+
+            print(f"Sucesso no DB: {db_message}")
+            # Você pode querer fechar a tela de edição ou voltar para a lista aqui
+            return True
+        else:
+            self.message = db_message # Mensagem de erro do banco
+            self.message_timer = 180
+            print(f"Erro no DB ao atualizar turma: {db_message}")
+            return False
     
     def handle_events(self):
         for event in pygame.event.get():
