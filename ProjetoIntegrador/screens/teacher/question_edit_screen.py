@@ -4,6 +4,9 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import update_question_in_db
+from databse.db_connector import getConnection
+import mysql.connector
 
 # Importar config se existir
 try:
@@ -613,83 +616,91 @@ class QuestionEditScreen:
         )
     
     def load_questions(self):
-        """Função mockup para carregar questões do banco"""
-        # No código real, faria uma consulta ao banco de dados
-        questions = [
-            {
-                "id": 1,
-                "text": "Qual é o resultado de 7 x 8?",
-                "hint": "Multiplique 7 por 8",
-                "subject": "Matematica",
-                "difficulty": "fácil",
-                "options": ["54", "56", "64", "72"],
-                "correct_option": 1
-            },
-            {
-                "id": 2,
-                "text": "Qual é a unidade de medida da força no Sistema Internacional (SI)?",
-                "hint": "Lembre-se da Segunda Lei de Newton",
-                "subject": "Fisica",
-                "difficulty": "fácil",
-                "options": ["Watt", "Joule", "Newton", "Pascal"],
-                "correct_option": 2
-            },
-            {
-                "id": 3,
-                "text": "Qual é a área de um círculo com raio 5cm? (Use π = 3.14)",
-                "hint": "Use a fórmula A = πr²",
-                "subject": "Matematica",
-                "difficulty": "média",
-                "options": ["25π cm²", "10π cm²", "15π cm²", "20π cm²"],
-                "correct_option": 0
-            },
-            {
-                "id": 4,
-                "text": "Um objeto é lançado verticalmente para cima. No ponto mais alto da trajetória:",
-                "hint": "Pense sobre a velocidade e aceleração no ponto mais alto",
-                "subject": "Fisica",
-                "difficulty": "média",
-                "options": ["A velocidade e a aceleração são nulas", "A velocidade é nula e a aceleração é g", "A velocidade é g e a aceleração é nula", "A velocidade e a aceleração são iguais a g"],
-                "correct_option": 1
-            },
-            {
-                "id": 5,
-                "text": "Qual é a solução da equação 2x² - 5x - 3 = 0?",
-                "hint": "Use a fórmula de Bhaskara",
-                "subject": "Matematica",
-                "difficulty": "difícil",
-                "options": ["x = 3 ou x = -0.5", "x = 2.5 ou x = -0.5", "x = 3 ou x = -1", "x = 2 ou x = -1.5"],
-                "correct_option": 0
-            },
-            {
-                "id": 6,
-                "text": "Uma partícula se move em linha reta com velocidade constante. A força resultante sobre ela é:",
-                "hint": "Lembre-se da Primeira Lei de Newton",
-                "subject": "Fisica",
-                "difficulty": "média",
-                "options": ["Constante e diferente de zero", "Variável", "Nula", "Não há informações suficientes para responder"],
-                "correct_option": 2
-            },
-            {
-                "id": 7,
-                "text": "Quais são as células responsáveis pela produção de anticorpos?",
-                "hint": "São células do sistema imunológico",
-                "subject": "Biologia",
-                "difficulty": "média",
-                "options": ["Linfócitos T", "Linfócitos B", "Macrófagos", "Neutrófilos"],
-                "correct_option": 1
-            },
-            {
-                "id": 8,
-                "text": "Qual é o principal produto da fotossíntese?",
-                "hint": "É uma molécula energética",
-                "subject": "Biologia",
-                "difficulty": "fácil",
-                "options": ["Oxigênio", "Água", "Glicose", "Dióxido de carbono"],
-                "correct_option": 2
-            }
-        ]
-        return questions
+        # Carrega a lista de questões do banco de dados
+        loaded_questions = []
+        connection = None
+        cursor = None
+
+        # Nomes das suas tabelas e colunas - AJUSTE SE OS NOMES NO SEU BANCO FOREM DIFERENTES!
+        # Tabela questoes
+        tbl_q = "questoes"
+        col_q_id = "id_questao"
+        col_q_enunciado = "enunciado"       # Corresponde a "text" no seu mock
+        col_q_id_materia = "id_materia"     # Chave estrangeira
+        col_q_serie = "serie"               # Corresponde a "grade" no seu mock
+        col_q_id_dificuldade = "id_dificuldade" # Chave estrangeira
+        col_q_alt1 = "alternativa_1"
+        col_q_alt2 = "alternativa_2"
+        col_q_alt3 = "alternativa_3"
+        col_q_alt4 = "alternativa_4"
+        col_q_idx_correta = "indice_alternativa_correta" # Corresponde a "correct_option"
+        col_q_explicacao = "explicacao"     # Corresponde a "hint" no seu mock
+
+        # Tabela materias
+        tbl_m = "materias"
+        col_m_id = "id_materia"
+        col_m_nome = "nome_materia"         # Corresponde a "subject" no seu mock
+
+        # Tabela dificuldades
+        tbl_d = "dificuldades"
+        col_d_id = "id_dificuldade"
+        col_d_nome = "nome_dificuldade"     # Corresponde a "difficulty" no seu mock
+
+        try:
+            connection = getConnection() # Usa o método da classe para obter a conexão
+            if not connection:
+                print("Erro (load_questions): Não foi possível conectar ao banco de dados.")
+                return loaded_questions # Retorna lista vazia
+
+            cursor = connection.cursor()
+
+            query = f"""
+                SELECT
+                    q.{col_q_id}, q.{col_q_enunciado}, m.{col_m_nome}, q.{col_q_serie},
+                    d.{col_d_nome}, q.{col_q_alt1}, q.{col_q_alt2}, q.{col_q_alt3},
+                    q.{col_q_alt4}, q.{col_q_idx_correta}, q.{col_q_explicacao}
+                FROM
+                    {tbl_q} q
+                JOIN
+                    {tbl_m} m ON q.{col_q_id_materia} = m.{col_m_id}
+                JOIN
+                    {tbl_d} d ON q.{col_q_id_dificuldade} = d.{col_d_id}
+                ORDER BY
+                    q.{col_q_id}; 
+            """
+            # print(f"DEBUG SQL (load_questions): {query}") # Descomente para depuração
+            cursor.execute(query)
+            database_results = cursor.fetchall()
+
+            for row in database_results:
+                # Mapeando os resultados da query para as chaves do seu dicionário mock
+                question_dict = {
+                    "id": row[0],                             # id_questao
+                    "text": row[1],                           # enunciado
+                    "subject": row[2],                        # nome_materia
+                    "grade": row[3],                          # serie
+                    "difficulty": row[4],                     # nome_dificuldade
+                    "options": [row[5], row[6], row[7], row[8]], # alternativas
+                    "correct_option": row[9],                 # indice_alternativa_correta
+                    "hint": row[10]                           # explicacao (mapeado para "hint")
+                }
+                loaded_questions.append(question_dict)
+
+        except mysql.connector.Error as err:
+            print(f"Erro (load_questions) ao buscar questões do banco: {err}")
+        except Exception as e:
+            print(f"Erro inesperado (load_questions): {e}")
+        finally:
+            if cursor:
+                try:
+                    cursor.close()
+                except mysql.connector.Error: pass # Ignora erros ao fechar
+            if connection and connection.is_connected():
+                try:
+                    connection.close()
+                except mysql.connector.Error: pass # Ignora erros ao fechar
+        
+        return loaded_questions
     
     def apply_filters(self):
         """Aplicar filtros à lista de questões"""
@@ -746,59 +757,92 @@ class QuestionEditScreen:
         return True, "Formulário válido"
     
     def save_edited_question(self):
-        """Salvar as alterações na questão"""
-        is_valid, message = self.validate_form()
+        """Salvar as alterações na questão no banco de dados."""
+        is_valid, validation_message = self.validate_form()
         if not is_valid:
-            self.message = message
-            self.message_timer = 180  # 3 segundos
+            self.message = validation_message
+            self.message_timer = 180
+            print(f"Erro de validação: {validation_message}")
             return False
         
-        # Preparar dados atualizados se estiver na tela de opções
-        if self.show_options_form:
-            options = [option_input.text.strip() for option_input in self.option_inputs]
-            
-            # Atualizar apenas os dados relevantes na questão atual
-            self.selected_question["options"] = options
-            self.selected_question["correct_option"] = self.correct_option
-            self.selected_question["difficulty"] = self.selected_difficulty
-        else:
-            # Atualizar dados da questão principal
-            self.selected_question["text"] = self.question_text_input.text.strip()
-            self.selected_question["hint"] = self.hint_input.text.strip()
-            self.selected_question["subject"] = self.selected_subject
-        
-        # Atualizar na lista local (simulação)
-        question_found = False
-        for i, q in enumerate(self.questions):
-            if q["id"] == self.selected_question["id"]:
-                self.questions[i] = self.selected_question
-                question_found = True
-                break
-                
-        if not question_found:
-            self.message = "Erro: Questão não encontrada"
+        if not self.selected_question or "id" not in self.selected_question:
+            self.message = "Nenhuma questão selecionada para editar."
             self.message_timer = 180
             return False
+        
+        data_for_db_update = {
+            "enunciado": self.selected_question.get("text"),
+            "explicacao": self.selected_question.get("hint"), 
+            "subject_name": self.selected_question.get("subject"),
+            "serie": self.selected_question.get("grade"), 
+            "difficulty_name": self.selected_question.get("difficulty"),
+            "options_list": list(self.selected_question.get("options", [])),
+            "correct_option_index": self.selected_question.get("correct_option")
+        }
+
+        # Sobrescrever com os valores dos inputs da UI, dependendo do form ativo
+        if self.show_options_form: # Se o usuário está editando opções, dificuldade
+            current_options = [opt_input.text.strip() for opt_input in self.option_inputs]
+            if len(current_options) == 4:
+                data_for_db_update["options_list"] = current_options
+            else:
+                self.message = "Erro: São necessárias 4 alternativas."
+                self.message_timer = 180
+                return False
+            data_for_db_update["correct_option_index"] = self.correct_option # Do seletor de opção correta da UI
+            data_for_db_update["difficulty_name"] = self.selected_difficulty # Do seletor de dificuldade da UI
+        else: 
+            data_for_db_update["enunciado"] = self.question_text_input.text.strip()
+            data_for_db_update["explicacao"] = self.hint_input.text.strip() 
+            data_for_db_update["subject_name"] = self.selected_subject 
+
+
+
+        question_id_to_update = self.selected_question["id"]
+
+        # --- CHAMADA REAL AO BANCO PARA ATUALIZAR ---
+        try:
+            was_successful, db_message = update_question_in_db(
+                question_id_to_update,
+                data_for_db_update,
+                getConnection
+            )
+        except NameError as ne: # Se update_question_in_db ou a func de conexão não for encontrada
+            self.message = f"Erro de configuração no código: {ne}"
+            self.message_timer = 180
+            print(self.message)
+            return False
+        except Exception as e:
+            self.message = f"Erro inesperado no sistema ao salvar questão: {e}"
+            self.message_timer = 180
+            print(self.message)
+            return False
+
+        # Processar o resultado
+        if was_successful:
+            self.message = db_message
+            self.message_timer = 120
             
-        # Aplicar os filtros novamente
-        saved_question_id = self.selected_question["id"]
-        self.apply_filters()
-        
-        # Destacar a questão editada na lista filtrada
-        self.selected_question = None
-        for q in self.filtered_questions:
-            if q["id"] == saved_question_id:
-                self.selected_question = q
-                break
-        
-        # Simulação de atualização no banco de dados
-        print(f"Questão atualizada: {self.selected_question}")
-        
-        # Mostrar mensagem de sucesso
-        self.message = "Questão atualizada com sucesso!"
-        self.message_timer = 120  # 2 segundos
-        
-        return True
+            print("Recarregando lista de questões após atualização...")
+            self.questions = self.load_questions() # Recarrega todas do DB
+            self.apply_filters() # Re-aplica os filtros da UI na lista atualizada
+            
+            # Re-selecionar a questão editada na lista filtrada para manter o contexto da UI
+            # (Opcional, mas boa experiência do usuário)
+            self.selected_question = None # Limpa seleção antiga
+            for q_dict in self.filtered_questions: # Procura na lista filtrada
+                if q_dict["id"] == question_id_to_update:
+                    self.selected_question = q_dict # Re-seleciona com os dados potencialmente atualizados
+                    break
+            
+            # Você pode querer fechar o formulário de edição aqui ou mudar de tela
+            print(f"Sucesso no DB: {db_message}")
+            return True
+        else:
+            self.message = db_message # Mensagem de erro do banco
+            self.message_timer = 180
+            print(f"Erro no DB ao atualizar questão: {db_message}")
+            return False
     
     def handle_events(self):
         for event in pygame.event.get():

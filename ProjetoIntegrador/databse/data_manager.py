@@ -675,3 +675,114 @@ def delete_question_from_db(question_id_to_delete, getConnection):
             try:
                 connection.close()
             except mysql.connector.Error: pass
+
+def update_question_in_db(question_id, question_update_data, getConnection):
+    # Atualiza uma questão existente no banco de dados.
+    connection = None
+    cursor = None
+    rows_affected = 0
+
+    # Nomes das tabelas e colunas de lookup - AJUSTE SE NECESSÁRIO!
+    tabela_materias = "materias"
+    col_id_materia_lookup = "id_materia"
+    col_nome_materia_lookup = "nome_materia"
+
+    tabela_dificuldades = "dificuldades"
+    col_id_dificuldade_lookup = "id_dificuldade"
+    col_nome_dificuldade_lookup = "nome_dificuldade"
+
+    # Nomes da tabela e colunas de 'questoes' - AJUSTE SE NECESSÁRIO!
+    tbl_q = "questoes"
+    col_q_id_where = "id_questao" # Para a cláusula WHERE
+    col_q_id_materia = "id_materia"
+    col_q_serie = "serie"
+    col_q_id_dificuldade = "id_dificuldade"
+    col_q_enunciado = "enunciado"
+    col_q_alt1 = "alternativa_1"
+    col_q_alt2 = "alternativa_2"
+    col_q_alt3 = "alternativa_3"
+    col_q_alt4 = "alternativa_4"
+    col_q_idx_correta = "indice_alternativa_correta"
+    col_q_explicacao = "explicacao" # Mapeado do 'hint'
+
+    try:
+        connection = getConnection()
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        cursor = connection.cursor()
+
+        # 1. Obter id_materia da tabela de lookup
+        nome_materia_nova = question_update_data.get('subject_name')
+        sql_find_materia = f"SELECT {col_id_materia_lookup} FROM {tabela_materias} WHERE {col_nome_materia_lookup} = %s"
+        cursor.execute(sql_find_materia, (nome_materia_nova,))
+        resultado_materia = cursor.fetchone()
+        if not resultado_materia:
+            return False, f"Matéria '{nome_materia_nova}' não encontrada para atualização."
+        id_materia_db = resultado_materia[0]
+
+        # 2. Obter id_dificuldade da tabela de lookup
+        nome_dificuldade_nova = question_update_data.get('difficulty_name')
+        sql_find_dificuldade = f"SELECT {col_id_dificuldade_lookup} FROM {tabela_dificuldades} WHERE {col_nome_dificuldade_lookup} = %s"
+        cursor.execute(sql_find_dificuldade, (nome_dificuldade_nova,))
+        resultado_dificuldade = cursor.fetchone()
+        if not resultado_dificuldade:
+            return False, f"Dificuldade '{nome_dificuldade_nova}' não encontrada para atualização."
+        id_dificuldade_db = resultado_dificuldade[0]
+
+        # 3. Preparar outros dados
+        serie_nova = question_update_data.get('serie')
+        enunciado_novo = question_update_data.get('enunciado')
+        opcoes_novas = question_update_data.get('options_list', [])
+        indice_correta_novo = question_update_data.get('correct_option_index')
+        explicacao_nova = question_update_data.get('explicacao') # Mapeado do 'hint'
+
+        if len(opcoes_novas) != 4:
+            return False, "A questão deve ter exatamente 4 alternativas para atualização."
+        
+        alt1, alt2, alt3, alt4 = opcoes_novas[0], opcoes_novas[1], opcoes_novas[2], opcoes_novas[3]
+
+        # 4. Montar e executar o UPDATE
+        sql_update_questao = f"""
+            UPDATE {tbl_q}
+            SET 
+                {col_q_id_materia} = %s, 
+                {col_q_serie} = %s, 
+                {col_q_id_dificuldade} = %s,
+                {col_q_enunciado} = %s,
+                {col_q_alt1} = %s,
+                {col_q_alt2} = %s,
+                {col_q_alt3} = %s,
+                {col_q_alt4} = %s,
+                {col_q_idx_correta} = %s,
+                {col_q_explicacao} = %s
+            WHERE {col_q_id_where} = %s
+        """
+        valores_update = (
+            id_materia_db, serie_nova, id_dificuldade_db, enunciado_novo,
+            alt1, alt2, alt3, alt4,
+            indice_correta_novo, explicacao_nova,
+            question_id # Para a cláusula WHERE
+        )
+
+        cursor.execute(sql_update_questao, valores_update)
+        connection.commit()
+        rows_affected = cursor.rowcount
+
+        if rows_affected > 0:
+            return True, f"Questão ID {question_id} atualizada com sucesso."
+        else:
+            # Pode acontecer se o ID não existir ou se os dados novos forem idênticos aos existentes.
+            return False, f"Nenhuma questão encontrada com ID {question_id} para atualizar, ou os dados não foram alterados."
+
+    except mysql.connector.Error as err:
+        if connection: connection.rollback()
+        return False, f"Erro de banco de dados ao atualizar questão ID {question_id}: {err}"
+    except IndexError:
+        if connection: connection.rollback()
+        return False, "Erro ao processar alternativas para atualização: número incorreto de opções."
+    except Exception as e:
+        if connection: connection.rollback()
+        return False, f"Erro inesperado ao atualizar questão ID {question_id}: {e}"
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
