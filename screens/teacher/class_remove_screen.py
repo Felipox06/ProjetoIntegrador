@@ -10,8 +10,6 @@ except ImportError:
     print("Arquivo config.py não encontrado. Usando configurações padrão.")
     COLORS = {
         "background": (235, 235, 240),
-        "light_shadow": (255, 255, 255),
-        "dark_shadow": (205, 205, 210),
         "accent": (27, 185, 185),
         "text": (60, 60, 60),
         "success": (75, 181, 67),
@@ -22,11 +20,9 @@ except ImportError:
 
 # Classes para componentes de UI neumórficos
 class NeumorphicPanel:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
+    def __init__(self, x, y, width, height, bg_color, border_radius=20):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.border_radius = border_radius
     
     def draw(self, surface):
@@ -37,12 +33,9 @@ class NeumorphicPanel:
 
 
 class NeumorphicButton:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 accent_color, text, font, is_toggle=False, is_active=False):
+    def __init__(self, x, y, width, height, bg_color, accent_color, text, font, is_toggle=False, is_active=False):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.accent_color = accent_color
         self.text = text
         self.font = font
@@ -86,12 +79,9 @@ class NeumorphicButton:
             surface.blit(self.text_surf, self.text_rect)
 
 class ClassListItem:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 class_id, class_name, grade, shift, year, font, is_selected=False):
+    def __init__(self, x, y, width, height, bg_color, class_id, class_name, grade, shift, year, font, is_selected=False):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.class_id = class_id
         self.class_name = class_name
         self.grade = grade
@@ -109,13 +99,6 @@ class ClassListItem:
         bg_color = (255, 220, 220) if self.is_selected else self.bg_color  # Vermelho claro para remoção
         
         pygame.draw.rect(surface, bg_color, self.rect, border_radius=10)
-        
-        # Sombras neumórficas
-        shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-        
-        shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
         
         # Adicionar borda especial se selecionado
         if self.is_selected:
@@ -143,9 +126,8 @@ class ClassListItem:
         surface.blit(info_surf, info_rect)
 
 class ConfirmationDialog:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
-                 text, font, text_font):
-        self.panel = NeumorphicPanel(x, y, width, height, bg_color, light_shadow, dark_shadow)
+    def __init__(self, x, y, width, height, bg_color, text, font, text_font):
+        self.panel = NeumorphicPanel(x, y, width, height, bg_color)
         self.text = text
         self.font = font
         self.text_font = text_font
@@ -154,33 +136,31 @@ class ConfirmationDialog:
         button_width = 120
         button_height = 40
         button_y = y + height - 60
-        
+
+        # Botão de confirmação
         self.confirm_button = NeumorphicButton(
             x + width//2 - button_width - 10, button_y,
             button_width, button_height,
-            bg_color, light_shadow, dark_shadow,
-            COLORS.get("error", (232, 77, 77)),
+            COLORS["warning"], COLORS["error"],  # Fundo amarelo, borda vermelha
             "CONFIRMAR", text_font
         )
         
+        # Botão de cancelar
         self.cancel_button = NeumorphicButton(
             x + width//2 + 10, button_y,
             button_width, button_height,
-            bg_color, light_shadow, dark_shadow,
-            (100, 100, 100),
+            COLORS["background"], COLORS["black"],  # Fundo padrão, borda preta
             "CANCELAR", text_font
         )
-    
-    def handle_events(self, event, mouse_pos):
+
+    def handle_events(self, event):
         if event.type == MOUSEBUTTONDOWN:
-            if self.confirm_button.is_clicked(mouse_pos):
-                self.confirm_button.pressed = True
-                return "confirm"
+            mouse_pos = pygame.mouse.get_pos()
             
-            if self.cancel_button.is_clicked(mouse_pos):
-                self.cancel_button.pressed = True
+            if self.confirm_button.is_clicked(mouse_pos):
+                return "confirm"
+            elif self.cancel_button.is_clicked(mouse_pos):
                 return "cancel"
-        
         return None
     
     def update(self):
@@ -218,12 +198,12 @@ class ClassRemoveScreen:
         self.user_data = user_data  # Contém user_type (teacher) e username
         self.center_x = self.width // 2
         
-        # Cores do design neumorfista
+        # Cores 
         self.bg_color = COLORS["background"]
-        self.light_shadow = COLORS["light_shadow"]
-        self.dark_shadow = COLORS["dark_shadow"]
+        self.warning_color = COLORS["warning"]
         self.accent_color = COLORS["accent"]
-        
+        self.success_color = COLORS["success"]
+
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 32, bold=True)
         self.subtitle_font = pygame.font.SysFont('Arial', 24, bold=True)
@@ -255,29 +235,28 @@ class ClassRemoveScreen:
         self.main_panel = NeumorphicPanel(
             self.center_x - 350, 20, 
             700, 560, 
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.accent_color
         )
         
         # Painel da lista de turmas
         self.list_panel = NeumorphicPanel(
             self.center_x - 330, 70, 
             660, 430, 
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            border_radius=15
+            self.accent_color
         )
         
         # Botões de rolagem para a lista
         self.scroll_up_button = NeumorphicButton(
             self.center_x + 290, 120,
             35, 35,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.bg_color,
             self.accent_color, "▲", self.text_font
         )
         
         self.scroll_down_button = NeumorphicButton(
             self.center_x + 290, 410,
             35, 35,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.bg_color,
             self.accent_color, "▼", self.text_font
         )
         
@@ -285,7 +264,7 @@ class ClassRemoveScreen:
         self.remove_button = NeumorphicButton(
             self.center_x - 75, 520,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color,
             COLORS.get("error", (232, 77, 77)),  # Vermelho para remover
             "REMOVER", self.text_font
         )
@@ -294,7 +273,7 @@ class ClassRemoveScreen:
         self.back_button = NeumorphicButton(
             self.center_x - 250, 520,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color,
             (100, 100, 100),  # Cinza para botão de voltar
             "VOLTAR", self.text_font
         )
@@ -303,7 +282,7 @@ class ClassRemoveScreen:
         self.confirmation_dialog = ConfirmationDialog(
             self.center_x - 200, self.center_x - 100,
             400, 200,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.bg_color,
             "Tem certeza que deseja excluir esta turma?",
             self.subtitle_font, self.text_font
         )
@@ -407,7 +386,7 @@ class ClassRemoveScreen:
             
             # Se o diálogo de confirmação estiver aberto, processar apenas seus eventos
             if self.show_confirmation:
-                result = self.confirmation_dialog.handle_events(event, pygame.mouse.get_pos())
+                result = self.confirmation_dialog.handle_events(event)
                 if result == "confirm":
                     self.remove_class()
                     self.show_confirmation = False
@@ -488,7 +467,7 @@ class ClassRemoveScreen:
     
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
         
         # Desenha o painel principal
         self.main_panel.draw(self.screen)
@@ -526,8 +505,6 @@ class ClassRemoveScreen:
                     self.list_panel.rect.width - 80,
                     item_height,
                     self.bg_color,
-                    self.light_shadow,
-                    self.dark_shadow,
                     class_item["id"],
                     class_item["name"],
                     class_item["grade"],
@@ -551,7 +528,7 @@ class ClassRemoveScreen:
             disabled_button = NeumorphicButton(
                 self.remove_button.rect.x, self.remove_button.rect.y,
                 self.remove_button.rect.width, self.remove_button.rect.height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
+                self.warning_color,
                 (180, 180, 180),  # Cinza para botão desativado
                 "REMOVER", self.text_font
             )

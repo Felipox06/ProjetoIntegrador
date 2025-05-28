@@ -249,14 +249,14 @@ class ClassEditScreen:
         self.main_panel = NeumorphicPanel(
             self.center_x - 350, 20, 
             700, 560, 
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.accent_color, self.light_shadow, self.dark_shadow
         )
         
         # Painel da lista de turmas
         self.list_panel = NeumorphicPanel(
             self.center_x - 330, 70, 
             660, 220, 
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.accent_color, self.light_shadow, self.dark_shadow,
             border_radius=15
         )
         
@@ -628,7 +628,7 @@ class ClassEditScreen:
     
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
         
         # Desenha o painel principal
         self.main_panel.draw(self.screen)
