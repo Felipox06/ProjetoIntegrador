@@ -963,3 +963,93 @@ def update_user_in_db(user_ra, user_type, fields_to_update, getConnection):
     finally:
         if cursor: cursor.close()
         if connection and connection.is_connected(): connection.close()
+
+def get_subject_id_by_name(subject_name, getConnection):
+ 
+    # Busca o ID de uma matéria no banco de dados com base no nome da matéria.
+    connection = None
+    cursor = None
+    subject_id = None
+
+    # Nomes da tabela e colunas - AJUSTE SE NECESSÁRIO!
+    table_materias = "materias"
+    col_id_materia = "id_materia"
+    col_nome_materia = "nome_materia"
+
+    try:
+        connection = getConnection()
+        if not connection:
+            print(f"Erro (get_subject_id): Falha ao obter conexão com o banco.")
+            return None
+        
+        cursor = connection.cursor()
+        
+        query = f"SELECT {col_id_materia} FROM {table_materias} WHERE {col_nome_materia} = %s"
+        cursor.execute(query, (subject_name,))
+        result = cursor.fetchone()
+        
+        if result:
+            subject_id = result[0]
+            
+    except mysql.connector.Error as err:
+        print(f"Erro de banco de dados (get_subject_id) ao buscar matéria '{subject_name}': {err}")
+        subject_id = None
+    except Exception as e:
+        print(f"Erro inesperado (get_subject_id) ao buscar matéria '{subject_name}': {e}")
+        subject_id = None
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass
+            
+    return subject_id
+
+def get_difficulty_id_by_name(difficulty_name, getConnection):
+
+    # Busca o ID de uma dificuldade no banco de dados com base no nome da dificuldade.
+    connection = None
+    cursor = None
+    difficulty_id = None
+
+    # Nomes da tabela e colunas - AJUSTE SE NECESSÁRIO!
+    table_dificuldades = "dificuldades"
+    col_id_dificuldade = "id_dificuldade"
+    col_nome_dificuldade = "nome_dificuldade"
+
+    try:
+        connection = getConnection()
+        if not connection:
+            print(f"Erro (get_difficulty_id): Falha ao obter conexão com o banco.")
+            return None
+            
+        cursor = connection.cursor()
+        
+        query = f"SELECT {col_id_dificuldade} FROM {table_dificuldades} WHERE {col_nome_dificuldade} = %s"
+        cursor.execute(query, (difficulty_name,))
+        result = cursor.fetchone()
+        
+        if result:
+            difficulty_id = result[0]
+            
+    except mysql.connector.Error as err:
+        print(f"Erro de banco de dados (get_difficulty_id) ao buscar dificuldade '{difficulty_name}': {err}")
+        difficulty_id = None
+    except Exception as e:
+        print(f"Erro inesperado (get_difficulty_id) ao buscar dificuldade '{difficulty_name}': {e}")
+        difficulty_id = None
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass
+            
+    return difficulty_id

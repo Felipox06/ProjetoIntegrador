@@ -1,6 +1,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import get_difficulty_id_by_name, get_subject_id_by_name
+from databse.db_connector import getConnection
 
 # Matérias e séries padrão sem acentos
 DEFAULT_SUBJECTS = [
@@ -270,6 +272,50 @@ class GameConfigScreen:
             ))
            
         return buttons
+    
+    def handle_game_start_action(self): # Este seria um novo método ou parte do seu handle_events
+        """
+        Chamado quando o usuário clica em "Jogar".
+        Busca os IDs e prepara o dicionário de configuração do jogo.
+        """
+        selected_subject_name = self.dropdown_materia.get_selected_text() # Exemplo
+        selected_grade_name = self.dropdown_serie.get_selected_text()     # Exemplo ("1 Ano", "2 Ano", etc.)
+        selected_difficulty_name = self.dropdown_dificuldade.get_selected_text() # Exemplo ("Facil", "Medio", etc.)
+
+        # Validação básica (você pode ter uma mais completa)
+        if not selected_subject_name or not selected_grade_name or not selected_difficulty_name:
+            # self.show_error_message("Por favor, selecione Matéria, Série e Dificuldade.")
+            print("Erro (GameConfigScreen): Por favor, selecione Matéria, Série e Dificuldade.")
+            return None # Indica que não deve prosseguir
+
+        # 2. Busque os IDs no banco de dados usando as funções do data_manager
+        print(f"GameConfigScreen: Buscando ID para Matéria '{selected_subject_name}'...")
+        subject_id_from_db = get_subject_id_by_name(selected_subject_name, getConnection)
+        
+        print(f"GameConfigScreen: Buscando ID para Dificuldade '{selected_difficulty_name}'...")
+        difficulty_id_from_db = get_difficulty_id_by_name(selected_difficulty_name, getConnection)
+
+        # 3. Verifique se os IDs foram encontrados
+        if subject_id_from_db is None:
+            # self.show_error_message(f"Matéria '{selected_subject_name}' não encontrada no sistema.")
+            print(f"Erro (GameConfigScreen): Matéria '{selected_subject_name}' não encontrada no sistema.")
+            return None
+        
+        if difficulty_id_from_db is None:
+            # self.show_error_message(f"Dificuldade '{selected_difficulty_name}' não encontrada no sistema.")
+            print(f"Erro (GameConfigScreen): Dificuldade '{selected_difficulty_name}' não encontrada no sistema.")
+            return None
+
+        print(f"GameConfigScreen: IDs encontrados - Matéria: {subject_id_from_db}, Dificuldade: {difficulty_id_from_db}")
+        game_config_data = {
+            "subject_name": selected_subject_name,       
+            "subject_id": subject_id_from_db,        
+            "grade_name": selected_grade_name,        
+            "difficulty_name": selected_difficulty_name, 
+            "difficulty_id": difficulty_id_from_db     
+        }
+        
+        return game_config_data
    
     def handle_events(self):
         for event in pygame.event.get():
