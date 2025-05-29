@@ -13,7 +13,6 @@ COLORS = {
     "warning": (251, 164, 31),
     "error": (232, 77, 77),
     "black": (0, 0, 0),
-    "progress": (238, 32, 81), 
 }
 
 # Configuracoes de jogo
