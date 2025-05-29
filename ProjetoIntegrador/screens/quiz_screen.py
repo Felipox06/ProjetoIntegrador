@@ -12,51 +12,35 @@ try:
     TOTAL_QUESTIONS = config.TOTAL_QUESTIONS
 except (ImportError, AttributeError):
     COLORS = {
-        "background": (30, 180, 195),     # Azul vibrante
-        "light_shadow": (255, 255, 255),  # Branco para sombras claras
-        "dark_shadow": (20, 140, 150),    # Azul mais escuro para sombras
-        "accent": (251, 164, 31),         # Laranja/amarelo para painéis
-        "text": (0, 0, 0),                # Preto para texto
-        "black": (0, 0, 0),               # Preto para bordas
-        "success": (75, 181, 67),         # Verde para sucesso
-        "warning": (232, 181, 12),        # Amarelo para avisos
-        "error": (232, 77, 77),           # Vermelho para erros
-        "progress": (238, 32, 81),        # Vermelho para barra de progresso
-    }
+    "background": (235, 235, 240),
+    "light_shadow": (255, 255, 255),
+    "dark_shadow": (205, 205, 210),
+    "accent": (27, 185, 185),
+    "text": (60, 60, 60),
+    "success": (75, 181, 67),
+    "warning": (251, 164, 31),
+    "error": (232, 77, 77),
+    "black": (0, 0, 0),
+    "progress": (238, 32, 81), 
+}
     CHECKPOINT_INTERVALS = 5
     TOTAL_QUESTIONS = 15
 
 # Componentes de UI neumórficos
 class NeumorphicPanel:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, border_radius=20):
+    def __init__(self, x, y, width, height, bg_color,  border_radius=20):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.border_radius = border_radius
    
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_light, border_radius=self.border_radius, width=3)
-       
-        # Desenhar sombra escura (inferior direita)
-        shadow_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_dark, border_radius=self.border_radius, width=3)
-       
-        # Borda preta para definição
-        pygame.draw.rect(surface, COLORS["black"], self.rect, border_radius=self.border_radius, width=2)
-
 class NeumorphicButton:
-    def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow,
-                 accent_color, text, font, is_toggle=False, is_active=False, is_circular=False):
+    def __init__(self, x, y, width, height, bg_color, accent_color, text, font, is_toggle=False, is_active=False, is_circular=False):
         self.rect = pygame.Rect(x, y, width, height)
         self.bg_color = bg_color
-        self.light_shadow = light_shadow
-        self.dark_shadow = dark_shadow
         self.accent_color = accent_color
         self.text = text
         self.font = font
@@ -99,9 +83,7 @@ class NeumorphicButton:
             # Fundo principal
             pygame.draw.circle(surface, bg_color, center, radius)
            
-            # Sombras circulares
-            pygame.draw.circle(surface, self.light_shadow, center, radius - 2, 2)
-            pygame.draw.circle(surface, self.dark_shadow, center, radius + 2, 2)
+           
            
             # Borda preta
             pygame.draw.circle(surface, COLORS["black"], center, radius, width=2)
@@ -119,7 +101,7 @@ class NeumorphicButton:
             # Desenhar botão retangular (comportamento original)
             if is_pressed:
                 # Estado pressionado: inverter sombras e aplicar cor de destaque
-                pygame.draw.rect(surface, bg_color, self.rect.inflate(-4, -4), border_radius=10)
+                pygame.draw.rect(surface, self.warning_color, self.rect.inflate(-4, -4), border_radius=10)
                 pygame.draw.rect(surface, COLORS["black"], self.rect.inflate(-4, -4), border_radius=10, width=2)
                
                 # Borda com cor de destaque
@@ -138,9 +120,6 @@ class NeumorphicButton:
                 # Estado normal: efeito neumórfico
                 pygame.draw.rect(surface, bg_color, self.rect, border_radius=10)
                
-                # Desenhar sombras
-                pygame.draw.rect(surface, self.light_shadow, self.rect.inflate(-2, -2), border_radius=10, width=2)
-                pygame.draw.rect(surface, self.dark_shadow, self.rect.inflate(2, 2), border_radius=10, width=2)
                
                 # Borda preta
                 pygame.draw.rect(surface, COLORS["black"], self.rect, border_radius=10, width=2)
@@ -478,6 +457,7 @@ class QuizScreen:
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
+        self.warning_color = COLORS["warning"]
        
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 28, bold=True)
@@ -526,8 +506,7 @@ class QuizScreen:
             left_panel_width,
             self.height - 40,
             self.accent_color,
-            self.light_shadow,
-            self.dark_shadow
+            
         )
        
         # Painel direito (informações e ajuda)
@@ -536,8 +515,7 @@ class QuizScreen:
             right_panel_width,
             self.height - 40,
             self.accent_color,
-            self.light_shadow,
-            self.dark_shadow
+            
         )
        
         # Barra de progresso (no topo do painel esquerdo)
@@ -555,8 +533,6 @@ class QuizScreen:
             40, 70,
             left_panel_width - 40, 130,
             self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
             border_radius=15
         )
        
@@ -566,8 +542,6 @@ class QuizScreen:
             self.height // 2 - 100,
             400, 200,
             self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
             border_radius=15
         )
        
@@ -577,8 +551,6 @@ class QuizScreen:
             self.height // 2 + 60,
             40, 40,
             self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
             COLORS["error"],
             "X", self.title_font,
             is_circular=True
@@ -596,10 +568,8 @@ class QuizScreen:
                 50,
                 button_y_start + i * button_y_gap,
                 button_width, button_height,
-                self.bg_color,
-                self.light_shadow,
-                self.dark_shadow,
-                self.accent_color,
+                self.warning_color,
+                self.warning_color,
                 "", self.option_font
             )
             self.option_buttons.append(button)
@@ -612,8 +582,6 @@ class QuizScreen:
             left_panel_width // 2 + 215,
             button_bottom_y, 60, 60,
             self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
             self.accent_color,
             "✓", self.title_font,  # Mudado de ">" para "✓"
             is_circular=True
@@ -623,9 +591,7 @@ class QuizScreen:
         self.quit_button = NeumorphicButton(
             50, button_bottom_y,
             60, 60,
-            self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
+            self.warning_color,
             COLORS["error"],
             "X", self.title_font,
             is_circular=True
@@ -637,9 +603,7 @@ class QuizScreen:
             button_bottom_y - 100,  # Movido para cima
             60, 60,
             self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
-            self.accent_color,
+            self.warning_color,
             "?", self.title_font,
             is_circular=True
         )
@@ -653,10 +617,8 @@ class QuizScreen:
             left_panel_width + 50,  
             help_button_y_start - 30,
             help_button_width, help_button_height,
-            self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
-            self.accent_color,
+            self.warning_color,
+            self.warning_color,
             "Pular Pergunta", self.small_font
         )
        
@@ -664,10 +626,8 @@ class QuizScreen:
             left_panel_width + 50,
             help_button_y_start + 15,
             help_button_width, help_button_height,
-            self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
-            self.accent_color,
+            self.warning_color,
+            self.warning_color,
             "Eliminar Alternativa", self.small_font
         )
        
@@ -675,10 +635,8 @@ class QuizScreen:
             left_panel_width + 50,
             help_button_y_start + 60,
             help_button_width, help_button_height,
-            self.bg_color,
-            self.light_shadow,
-            self.dark_shadow,
-            self.accent_color,
+            self.warning_color,
+            self.warning_color,
             "Dica sobre o Tema", self.small_font
         )
        
@@ -887,7 +845,7 @@ class QuizScreen:
    
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
        
         # Desenha os painéis principais
         self.left_panel.draw(self.screen)
@@ -969,12 +927,12 @@ class QuizScreen:
                 # Destacar opção selecionada mas não confirmada
                 if i == self.selected_option and not self.show_result:
                     # Salvar cor original
-                    original_bg = button.bg_color
+                    original_bg = button.warning_color
                     # Aplicar cor de seleção temporária
-                    button.bg_color = (200, 220, 255)  # Azul claro para seleção
+                    button.warning_color = (200, 220, 255)  # Azul claro para seleção
                     button.draw(self.screen)
                     # Restaurar cor original
-                    button.bg_color = original_bg
+                    button.warning = original_bg
                 else:
                     button.draw(self.screen)
            
