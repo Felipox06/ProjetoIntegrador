@@ -125,14 +125,79 @@ def main():
             current_screen = LoginScreen(screen)
             result = current_screen.run()
             
-            if result["action"] == "login_success":
-                user_data = {
-                    "user_type": result["user_type"],
-                    "username": result["username"]
-                }
-                next_screen = "menu"
+            if result.get("action") == "login_success":
+                # 1. Obtenha o dicionário INTERNO com os dados do usuário
+                dados_do_login_bem_sucedido = result.get("user_data")
+
+                if dados_do_login_bem_sucedido:
+                    # 2. AGORA, ATUALIZE a variável 'user_data' do escopo da função main()
+                    #    Esta 'user_data' será passada para a MenuScreen e outras telas.
+                    #    A MenuScreen espera as chaves "user_type" e "username".
+                    #    Os dados do login vêm com "tipo" e "nome". Precisamos mapeá-los.
+                    user_data = {
+                        "RA": dados_do_login_bem_sucedido.get("RA"),
+                        "username": dados_do_login_bem_sucedido.get("nome"),  # Mapeia 'nome' para 'username'
+                        "user_type": dados_do_login_bem_sucedido.get("tipo"), # Mapeia 'tipo' para 'user_type'
+                        # Adicione outros campos de dados_do_login_bem_sucedido que você queira
+                        # que fiquem disponíveis em user_data para outras telas.
+                        # Ex: "turma": dados_do_login_bem_sucedido.get("turma") se for aluno
+                        #     "materia": dados_do_login_bem_sucedido.get("materia") se for professor
+                    }
+                    
+                    # Se a MenuScreen e outras telas forem adaptadas para usar "RA", "nome", "tipo" diretamente,
+                    # você poderia simplesmente fazer:
+                    # user_data = dados_do_login_bem_sucedido
+                    
+                    print(f"Login bem-sucedido! Usuário: {user_data.get('username')}, Tipo: {user_data.get('user_type')}")
+                    next_screen = "menu" 
+                else:
+                    print("Erro: Login retornou sucesso, mas dados do usuário não encontrados.")
+                    next_screen = "login" # Ou tratar como um erro mais sério
+            
+            elif result.get("action") == "login_failed":
+                # A tela de login já deve ter definido uma mensagem de erro interna (self.error_message)
+                # Aqui, apenas garantimos que o jogo não avance.
+                print("Tentativa de login falhou. Permanecendo na tela de login.")
+                # Não mudar next_screen, ou explicitamente:
+                # next_screen = "login" 
+                pass # Permanece no loop, a tela de login será redesenhada com a mensagem de erro dela
+
+            else: # Outras ações como fechar a janela do LoginScreen
+                action_returned = result.get("action", "desconhecida")
+                print(f"Ação da tela de login: '{action_returned}'. Encerrando ou tratando.")
+                if action_returned == "exit" or action_returned is None: # Exemplo
+                     running = False
+                # Se não for uma ação de saída conhecida, pode ser um bug ou você pode querer voltar ao login
+                # else:
+                #     next_screen = "login"
+
+        elif next_screen == "menu":
+            # Agora, 'user_data' que é passado para MenuScreen conterá o dicionário
+            # com as chaves "username" e "user_type" como a MenuScreen espera.
+            if user_data: # Garante que user_data não é None antes de ir para o menu
+                current_screen = MenuScreen(screen, user_data) 
+                result = current_screen.run()
+                
+                # Processar o resultado da MenuScreen. Atenção aqui também:
+                # Se MenuScreen espera user_data['user_type'], e você está usando user_data['tipo']
+                # no 'user_data' global, você precisará ser consistente.
+                # No código acima, eu fiz user_data ter 'user_type' e 'username'
+                # para ser compatível com o que MenuScreen espera.
+                if result.get("action") == "play_game":
+                    next_screen = "game_config"
+                elif result.get("action") == "show_ranking" and user_data.get("user_type") == "teacher": # Usando .get()
+                    print("Mostrando ranking...")
+                    next_screen = "ranking_screen" 
+                # ... continue adaptando as verificações em main.py para usar as chaves corretas ...
+                elif result.get("action") == "logout":
+                    user_data = None # Limpa os dados do usuário ao fazer logout
+                    next_screen = "login"
+                else: # Ação desconhecida ou para sair
+                    running = False
             else:
-                running = False
+                # Se user_data for None (ex: login falhou e não foi tratado para sair), volta ao login
+                print("Tentando acessar o menu sem usuário logado. Redirecionando para login.")
+                next_screen = "login"
                 
         elif next_screen == "menu":
             current_screen = MenuScreen(screen, user_data)

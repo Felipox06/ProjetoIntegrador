@@ -3,6 +3,8 @@ import sys
 import os
 from pygame.locals import *
 pygame.init()
+from databse.data_manager import verify_user_credentials_from_db
+from databse.db_connector import getConnection
 
 # importe do config:
 try:
@@ -207,13 +209,83 @@ class LoginScreen:
             "Professor", self.text_font,
             is_toggle=True, is_active=False
         )
+
+    def _attempt_login(self):
+        ra_digitado = self.username_input.text.strip()
+        senha_digitada = self.password_input.text
+        tipo_selecionado_ui = self.user_type  # "student" ou "teacher"
+
+        if not ra_digitado or not senha_digitada:
+            self.error_message = "RA e Senha são obrigatórios."
+            self.message_timer = 180
+            return {"action": "login_failed"}
+
+        if not tipo_selecionado_ui:
+            self.error_message = "Por favor, selecione se você é Aluno ou Professor."
+            self.message_timer = 180
+            return {"action": "login_failed"}
+
+        # Chama a função que retorna o DICIONÁRIO COMPLETO do usuário ou None
+        try:
+            # Adapte 'self.get_db_connection' se necessário
+            dados_usuario_logado_do_db = verify_user_credentials_from_db(
+                ra_digitado,
+                senha_digitada,
+                tipo_selecionado_ui,
+                getConnection
+            )
+        except NameError as ne:
+            self.error_message = f"Erro de configuração: {ne}"
+            self.message_timer = 180
+            print(self.error_message)
+            return {"action": "login_failed"}
+        except Exception as e:
+            self.error_message = f"Erro ao conectar com o servidor: {e}"
+            self.message_timer = 180
+            print(self.error_message)
+            return {"action": "login_failed"}
+
+        if dados_usuario_logado_do_db: # Se não for None, é o dicionário do usuário
+            # Login BEM-SUCEDIDO!
+            # dados_usuario_logado_do_db já é o dicionário com RA, nome, tipo, etc.
+            print(f"Login bem-sucedido (dados do DB): {dados_usuario_logado_do_db}")
+            
+            self.running = False  # Para fechar a tela de login
+            
+            # Retorna a ação de sucesso E o dicionário completo do usuário sob a chave "user_data"
+            return {"action": "login_success", "user_data": dados_usuario_logado_do_db}
+        else:
+            # Login FALHOU para o tipo selecionado. Vamos verificar o outro tipo.
+            outro_tipo = "teacher" if tipo_selecionado_ui == "student" else "student"
+            print(f"Login como {tipo_selecionado_ui} falhou. Tentando como {outro_tipo}...")
+            
+            dados_outro_tipo_do_db = None
+            try:
+                dados_outro_tipo_do_db = verify_user_credentials_from_db(
+                    ra_digitado,
+                    senha_digitada,
+                    outro_tipo,
+                    getConnection 
+                )
+            except Exception as e:
+                print(f"Erro ao verificar outro tipo de usuário ({outro_tipo}): {e}")
+
+            if dados_outro_tipo_do_db:
+                tipo_correto_display = "Professor" if outro_tipo == "teacher" else "Aluno"
+                self.error_message = f"Login como {tipo_selecionado_ui.capitalize()} falhou. Credenciais para {tipo_correto_display}? Selecione o tipo correto."
+                self.message_timer = 240 
+            else:
+                self.error_message = "RA ou Senha inválidos."
+                self.message_timer = 180
+            
+            return {"action": "login_failed"}
     
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-                
+            
             if event.type == MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 
@@ -225,12 +297,13 @@ class LoginScreen:
                     self.username_input.active = False
                     self.password_input.active = True
                 
+                # --- ALTERAÇÃO AQUI ---
                 elif self.login_button.is_clicked(mouse_pos):
-                    self.login_button.pressed = True
-                    username = self.username_input.text
-                    password = self.password_input.text
-                    self.running = False
-                    return {"action": "login_success", "user_type": self.user_type, "username": username}
+                    self.login_button.pressed = True # Mantém o feedback visual do botão
+                    # SUBSTITUA as linhas antigas que pegavam username/password e retornavam sucesso
+                    # PELA CHAMADA AO MÉTODO _attempt_login:
+                    return self._attempt_login() 
+                # --- FIM DA ALTERAÇÃO ---
                 
                 elif self.student_button.is_clicked(mouse_pos):
                     self.student_button.is_active = True
@@ -242,7 +315,7 @@ class LoginScreen:
                     self.teacher_button.is_active = True
                     self.user_type = "teacher"
                 
-                else:
+                else: # Clique fora dos inputs e botões principais de seleção de tipo/login
                     self.username_input.active = False
                     self.password_input.active = False
             
@@ -250,21 +323,27 @@ class LoginScreen:
                 if self.username_input.active:
                     if event.key == K_BACKSPACE:
                         self.username_input.text = self.username_input.text[:-1]
-                    else:
+                    # Removi o elif com self.username_input.max_length para evitar o AttributeError
+                    # se max_length não estiver definido na sua classe SimpleInput.
+                    # Adicione a verificação de max_length aqui se você implementou esse atributo.
+                    elif event.unicode.isprintable(): # Boa prática para aceitar apenas caracteres imprimíveis
                         self.username_input.text += event.unicode
                 
                 elif self.password_input.active:
                     if event.key == K_BACKSPACE:
                         self.password_input.text = self.password_input.text[:-1]
-                    else:
+                    # Removi o elif com self.password_input.max_length
+                    # Adicione a verificação de max_length aqui se você implementou.
+                    elif event.unicode.isprintable():
                         self.password_input.text += event.unicode
                 
-                if event.key == K_RETURN:
-                    self.login_button.pressed = True
-                    username = self.username_input.text
-                    password = self.password_input.text
-                    self.running = False
-                    return {"action": "login_success", "user_type": self.user_type, "username": username}
+                # --- ALTERAÇÃO AQUI ---
+                if event.key == K_RETURN: # Se Enter for pressionado
+                    # self.login_button.pressed = True # Opcional: feedback visual se quiser simular clique
+                    # SUBSTITUA as linhas antigas que pegavam username/password e retornavam sucesso
+                    # PELA CHAMADA AO MÉTODO _attempt_login:
+                    return self._attempt_login()
+                # --- FIM DA ALTERAÇÃO ---
         
         return {"action": "none"}
     

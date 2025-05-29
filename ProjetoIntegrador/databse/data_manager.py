@@ -2,6 +2,104 @@ from databse.db_connector import getConnection
 import mysql.connector
 
 
+def verify_user_credentials_from_db(input_ra, input_password, selected_user_type, getConnection):
+    """
+    Verifica as credenciais de login de um usuário (student ou teacher)
+    comparando com os dados no banco de dados para o tipo de usuário especificado.
+    Retorna um dicionário com os dados do usuário em caso de sucesso.
+    """
+    connection = None
+    cursor = None
+    user_data = None
+
+    # Nomes das tabelas e colunas - AJUSTE SE OS NOMES NO SEU BANCO FOREM DIFERENTES!
+    # Tabela Alunos (para selected_user_type == "student")
+    tbl_alunos = "alunos"
+    col_al_ra = "aluno_RA"
+    col_al_nome = "nome_aluno"
+    col_al_senha = "senha_aluno" # Coluna da senha no banco para alunos
+    col_al_turma = "turma"     # Coluna da turma no banco para alunos
+
+    # Tabela Professores (para selected_user_type == "teacher")
+    tbl_prof = "professores"
+    col_pr_ra = "prof_RA"
+    col_pr_nome = "nome_prof"
+    col_pr_senha = "senha_prof" # Coluna da senha no banco para professores
+    col_pr_materia = "materia"  # Coluna da matéria no banco para professores
+
+    try:
+        connection = getConnection()
+        if not connection:
+            print("Erro (verify_user_credentials): Falha ao obter conexão com o banco.")
+            return None
+        
+        cursor = connection.cursor(dictionary=True) # Retorna resultados como dicionários
+
+        if selected_user_type == "student":
+            # Usamos AS para que as chaves do dicionário db_result sejam consistentes
+            sql_query = f"""
+                SELECT 
+                    {col_al_ra} AS RA, 
+                    {col_al_nome} AS nome, 
+                    {col_al_senha} AS senha_no_banco, 
+                    {col_al_turma} AS turma 
+                FROM {tbl_alunos} 
+                WHERE {col_al_ra} = %s
+            """
+            cursor.execute(sql_query, (input_ra,))
+            db_result = cursor.fetchone()
+
+            if db_result and db_result["senha_no_banco"] == input_password:
+                user_data = {
+                    "RA": db_result["RA"],
+                    "nome": db_result["nome"],
+                    "tipo": "student", # Define o tipo no dicionário retornado
+                    "turma": db_result["turma"]
+                    # Adicione outros campos da tabela 'alunos' que você queira carregar aqui
+                }
+        elif selected_user_type == "teacher":
+            sql_query = f"""
+                SELECT 
+                    {col_pr_ra} AS RA, 
+                    {col_pr_nome} AS nome, 
+                    {col_pr_senha} AS senha_no_banco, 
+                    {col_pr_materia} AS materia 
+                FROM {tbl_prof} 
+                WHERE {col_pr_ra} = %s
+            """
+            cursor.execute(sql_query, (input_ra,))
+            db_result = cursor.fetchone()
+
+            if db_result and db_result["senha_no_banco"] == input_password:
+                user_data = {
+                    "RA": db_result["RA"],
+                    "nome": db_result["nome"],
+                    "tipo": "teacher", # Define o tipo no dicionário retornado
+                    "materia": db_result["materia"]
+                    # Adicione outros campos da tabela 'professores' que você queira carregar aqui
+                }
+        else:
+            print(f"Erro (verify_user_credentials): Tipo de usuário desconhecido ou não fornecido '{selected_user_type}'")
+            return None # Tipo de usuário inválido
+
+    except mysql.connector.Error as err:
+        print(f"Erro de banco de dados (verify_user_credentials): {err}")
+        user_data = None # Garante que None seja retornado em caso de erro de DB
+    except Exception as e:
+        print(f"Erro inesperado (verify_user_credentials): {e}")
+        user_data = None
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except mysql.connector.Error: pass # Ignora erros ao fechar
+        if connection and connection.is_connected():
+            try:
+                connection.close()
+            except mysql.connector.Error: pass # Ignora erros ao fechar
+            
+    return user_data # Retorna o dicionário do usuário ou None
+
 def add_user_to_database(user_data, getConnection):
     connection = None
     cursor = None
