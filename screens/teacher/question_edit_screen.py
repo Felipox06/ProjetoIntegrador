@@ -621,68 +621,80 @@ class QuestionEditScreen:
         connection = None
         cursor = None
 
-        # Nomes das suas tabelas e colunas - AJUSTE SE OS NOMES NO SEU BANCO FOREM DIFERENTES!
+        # Nomes das suas tabelas e colunas - CONFIRA COM SEU SCRIPT SQL!
         # Tabela questoes
         tbl_q = "questoes"
         col_q_id = "id_questao"
-        col_q_enunciado = "enunciado"       # Corresponde a "text" no seu mock
-        col_q_id_materia = "id_materia"     # Chave estrangeira
-        col_q_serie = "serie"               # Corresponde a "grade" no seu mock
-        col_q_id_dificuldade = "id_dificuldade" # Chave estrangeira
+        col_q_enunciado = "enunciado"       # Seu SQL tem 'enunciado TEXT'
+        col_q_fk_materia = "id_materia"     # FK para materias
+        col_q_fk_dificuldade = "id_dificuldade" # FK para dificuldades
+        col_q_fk_serie = "id_serie"         # FK para serie (NOVO)
         col_q_alt1 = "alternativa_1"
         col_q_alt2 = "alternativa_2"
         col_q_alt3 = "alternativa_3"
         col_q_alt4 = "alternativa_4"
-        col_q_idx_correta = "indice_alternativa_correta" # Corresponde a "correct_option"
-        col_q_explicacao = "explicacao"     # Corresponde a "hint" no seu mock
+        col_q_idx_correta = "indice_alternativa_correta"
+        col_q_explicacao = "explicacao"     # Seu SQL tem 'explicacao TEXT'
 
         # Tabela materias
         tbl_m = "materias"
-        col_m_id = "id_materia"
-        col_m_nome = "nome_materia"         # Corresponde a "subject" no seu mock
+        col_m_id_pk = "id_materia"          # PK em materias
+        col_m_nome = "nome_materia"         # Nome da matéria
 
         # Tabela dificuldades
         tbl_d = "dificuldades"
-        col_d_id = "id_dificuldade"
-        col_d_nome = "nome_dificuldade"     # Corresponde a "difficulty" no seu mock
+        col_d_id_pk = "id_dificuldade"      # PK em dificuldades
+        col_d_nome = "nome_dificuldade"     # Nome da dificuldade
+
+        # Tabela serie (NOVA)
+        tbl_s = "serie"
+        col_s_id_pk = "id_serie"            # PK em serie
+        col_s_nome = "nome_serie"           # Nome da série
 
         try:
-            connection = getConnection() # Usa o método da classe para obter a conexão
+            connection = getConnection() # Usa o método da classe
             if not connection:
                 print("Erro (load_questions): Não foi possível conectar ao banco de dados.")
-                return loaded_questions # Retorna lista vazia
+                return loaded_questions
 
-            cursor = connection.cursor()
+            cursor = connection.cursor(dictionary=True) # Retorna resultados como dicionários
 
             query = f"""
                 SELECT
-                    q.{col_q_id}, q.{col_q_enunciado}, m.{col_m_nome}, q.{col_q_serie},
-                    d.{col_d_nome}, q.{col_q_alt1}, q.{col_q_alt2}, q.{col_q_alt3},
-                    q.{col_q_alt4}, q.{col_q_idx_correta}, q.{col_q_explicacao}
+                    q.{col_q_id} AS id, 
+                    q.{col_q_enunciado} AS text, 
+                    m.{col_m_nome} AS subject, 
+                    s.{col_s_nome} AS grade,         -- Nome da série vindo da tabela 'serie'
+                    d.{col_d_nome} AS difficulty, 
+                    q.{col_q_alt1} AS alt1, 
+                    q.{col_q_alt2} AS alt2, 
+                    q.{col_q_alt3} AS alt3,
+                    q.{col_q_alt4} AS alt4, 
+                    q.{col_q_idx_correta} AS correct_option, 
+                    q.{col_q_explicacao} AS hint      -- Mapeando 'explicacao' do DB para 'hint' na UI
                 FROM
                     {tbl_q} q
-                JOIN
-                    {tbl_m} m ON q.{col_q_id_materia} = m.{col_m_id}
-                JOIN
-                    {tbl_d} d ON q.{col_q_id_dificuldade} = d.{col_d_id}
+                JOIN {tbl_m} m ON q.{col_q_fk_materia} = m.{col_m_id_pk}
+                JOIN {tbl_d} d ON q.{col_q_fk_dificuldade} = d.{col_d_id_pk}
+                JOIN {tbl_s} s ON q.{col_q_fk_serie} = s.{col_s_id_pk} -- ADICIONADO JOIN com 'serie'
                 ORDER BY
                     q.{col_q_id}; 
             """
             # print(f"DEBUG SQL (load_questions): {query}") # Descomente para depuração
             cursor.execute(query)
-            database_results = cursor.fetchall()
+            database_results = cursor.fetchall() # Lista de dicionários
 
-            for row in database_results:
-                # Mapeando os resultados da query para as chaves do seu dicionário mock
+            for row_dict in database_results:
+                # As chaves em row_dict agora são os aliases definidos no SELECT (id, text, subject, etc.)
                 question_dict = {
-                    "id": row[0],                             # id_questao
-                    "text": row[1],                           # enunciado
-                    "subject": row[2],                        # nome_materia
-                    "grade": row[3],                          # serie
-                    "difficulty": row[4],                     # nome_dificuldade
-                    "options": [row[5], row[6], row[7], row[8]], # alternativas
-                    "correct_option": row[9],                 # indice_alternativa_correta
-                    "hint": row[10]                           # explicacao (mapeado para "hint")
+                    "id": row_dict["id"],
+                    "text": row_dict["text"],
+                    "subject": row_dict["subject"],
+                    "grade": row_dict["grade"],       # Veio do JOIN com a tabela serie
+                    "difficulty": row_dict["difficulty"],
+                    "options": [row_dict["alt1"], row_dict["alt2"], row_dict["alt3"], row_dict["alt4"]],
+                    "correct_option": row_dict["correct_option"],
+                    "hint": row_dict["hint"] 
                 }
                 loaded_questions.append(question_dict)
 
@@ -694,11 +706,11 @@ class QuestionEditScreen:
             if cursor:
                 try:
                     cursor.close()
-                except mysql.connector.Error: pass # Ignora erros ao fechar
+                except mysql.connector.Error: pass
             if connection and connection.is_connected():
                 try:
                     connection.close()
-                except mysql.connector.Error: pass # Ignora erros ao fechar
+                except mysql.connector.Error: pass
         
         return loaded_questions
     

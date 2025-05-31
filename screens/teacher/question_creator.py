@@ -1,7 +1,7 @@
 import pygame
 import sys
 from pygame.locals import *
-from databse.data_manager import adicionar_questao_db
+from databse.data_manager import add_question_db
 from databse.db_connector import getConnection
 
 # Matérias e séries padrão sem acentos
@@ -523,7 +523,7 @@ class QuestionEditor:
         question_data = self.prepare_question_data()
         
         try:
-            sucesso_db, mensagem_db = adicionar_questao_db(question_data, getConnection)
+            sucesso_db, mensagem_db = add_question_db(question_data, getConnection)
 
         except NameError as ne:
             # Isso pode acontecer se adicionar_questao_db ou a função de conexão não forem encontradas
