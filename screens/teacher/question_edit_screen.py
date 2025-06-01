@@ -769,7 +769,7 @@ class QuestionEditScreen:
         return True, "Formulário válido"
     
     def save_edited_question(self):
-        """Salvar as alterações na questão no banco de dados."""
+        """Salva as alterações da questão editada no banco de dados."""
         is_valid, validation_message = self.validate_form()
         if not is_valid:
             self.message = validation_message
@@ -780,46 +780,52 @@ class QuestionEditScreen:
         if not self.selected_question or "id" not in self.selected_question:
             self.message = "Nenhuma questão selecionada para editar."
             self.message_timer = 180
+            print(self.message)
             return False
         
-        data_for_db_update = {
-            "enunciado": self.selected_question.get("text"),
-            "explicacao": self.selected_question.get("hint"), 
-            "subject_name": self.selected_question.get("subject"),
-            "serie": self.selected_question.get("grade"), 
-            "difficulty_name": self.selected_question.get("difficulty"),
-            "options_list": list(self.selected_question.get("options", [])),
-            "correct_option_index": self.selected_question.get("correct_option")
-        }
+        data_for_db_update = {}
 
-        # Sobrescrever com os valores dos inputs da UI, dependendo do form ativo
-        if self.show_options_form: # Se o usuário está editando opções, dificuldade
+        if self.show_options_form: 
             current_options = [opt_input.text.strip() for opt_input in self.option_inputs]
-            if len(current_options) == 4:
-                data_for_db_update["options_list"] = current_options
-            else:
+            if len(current_options) != 4:
                 self.message = "Erro: São necessárias 4 alternativas."
                 self.message_timer = 180
                 return False
-            data_for_db_update["correct_option_index"] = self.correct_option # Do seletor de opção correta da UI
-            data_for_db_update["difficulty_name"] = self.selected_difficulty # Do seletor de dificuldade da UI
-        else: 
-            data_for_db_update["enunciado"] = self.question_text_input.text.strip()
-            data_for_db_update["explicacao"] = self.hint_input.text.strip() 
-            data_for_db_update["subject_name"] = self.selected_subject 
+            
+            data_for_db_update["options"] = current_options # Chave 'options'
+            data_for_db_update["correct_option"] = self.correct_option # Chave 'correct_option'
+            data_for_db_update["difficulty"] = self.selected_difficulty # Chave 'difficulty' (nome)
+            
+            # Mantém os outros campos com os valores originais de self.selected_question
+            # usando as chaves que update_question_in_db espera
+            data_for_db_update["text"] = self.selected_question.get("text")
+            data_for_db_update["explanation"] = self.selected_question.get("hint") # UI 'hint' -> DB 'explanation'
+            data_for_db_update["subject"] = self.selected_question.get("subject") # UI 'subject' -> DB 'subject'
+            data_for_db_update["grade"] = self.selected_question.get("grade")     # UI 'grade' -> DB 'grade'
 
-
-
+        else: # Usuário está editando enunciado, dica/explicação, matéria
+            data_for_db_update["text"] = self.question_text_input.text.strip() # Chave 'text'
+            data_for_db_update["explanation"] = self.hint_input.text.strip()      # Chave 'explanation'
+            data_for_db_update["subject"] = self.selected_subject                # Chave 'subject' (nome)
+            data_for_db_update["grade"] = self.selected_question.get("grade") # Série original (nome)
+            data_for_db_update["difficulty"] = self.selected_question.get("difficulty") # Dificuldade original (nome)
+            data_for_db_update["options"] = list(self.selected_question.get("options", []))
+            data_for_db_update["correct_option"] = self.selected_question.get("correct_option")
+        
         question_id_to_update = self.selected_question["id"]
+
+        # DEBUG: Verifique este print!
+        print("DEBUG (save_edited_question): Dados sendo enviados para update_question_in_db:", data_for_db_update) 
 
         # --- CHAMADA REAL AO BANCO PARA ATUALIZAR ---
         try:
+            # Adapte 'self.get_connection' ao seu método/função real de obter conexão
             was_successful, db_message = update_question_in_db(
                 question_id_to_update,
-                data_for_db_update,
-                getConnection
+                data_for_db_update, 
+                getConnection 
             )
-        except NameError as ne: # Se update_question_in_db ou a func de conexão não for encontrada
+        except NameError as ne:
             self.message = f"Erro de configuração no código: {ne}"
             self.message_timer = 180
             print(self.message)
@@ -832,30 +838,30 @@ class QuestionEditScreen:
 
         # Processar o resultado
         if was_successful:
-            self.message = db_message
+            self.message = db_message 
             self.message_timer = 120
             
             print("Recarregando lista de questões após atualização...")
-            self.questions = self.load_questions() # Recarrega todas do DB
-            self.apply_filters() # Re-aplica os filtros da UI na lista atualizada
+            self.questions = self.load_questions() 
+            if hasattr(self, 'apply_filters') and callable(self.apply_filters):
+                self.apply_filters() 
+            elif hasattr(self, 'update_filtered_list') and callable(self.update_filtered_list):
+                 self.update_filtered_list()
             
-            # Re-selecionar a questão editada na lista filtrada para manter o contexto da UI
-            # (Opcional, mas boa experiência do usuário)
-            self.selected_question = None # Limpa seleção antiga
-            for q_dict in self.filtered_questions: # Procura na lista filtrada
-                if q_dict["id"] == question_id_to_update:
-                    self.selected_question = q_dict # Re-seleciona com os dados potencialmente atualizados
-                    break
+            updated_question_in_list = next((q for q in self.questions if q["id"] == question_id_to_update), None)
+            if updated_question_in_list:
+                self.selected_question = updated_question_in_list
+            else: 
+                self.selected_question = None
             
-            # Você pode querer fechar o formulário de edição aqui ou mudar de tela
             print(f"Sucesso no DB: {db_message}")
             return True
         else:
-            self.message = db_message # Mensagem de erro do banco
+            self.message = db_message 
             self.message_timer = 180
             print(f"Erro no DB ao atualizar questão: {db_message}")
             return False
-    
+        
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
