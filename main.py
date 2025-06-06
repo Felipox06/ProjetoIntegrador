@@ -325,12 +325,20 @@ def main():
             current_screen = GameConfigScreen(screen, user_data)
             result = current_screen.run()
             
-            if result["action"] == "start_game":
-                game_config = {
-                    "subject": result["subject"],
-                    "grade": result["grade"]
-                }
-                next_screen = "quiz"
+            if result.get("action") == "start_game":
+                # Pega o dicionário completo que a GameConfigScreen preparou
+                detailed_game_settings = result.get("game_settings")
+                
+                if detailed_game_settings:
+                    # A variável game_config agora recebe o dicionário completo com nomes e IDs
+                    game_config = detailed_game_settings
+                    
+                    print(f"Main: Configurações do jogo prontas. Passando para o Quiz: {game_config}")
+                    next_screen = "quiz"
+                else:
+                    # Isso acontece se um erro ocorreu na GameConfigScreen (ex: ID não encontrado)
+                    print("Main: Falha ao obter configurações do jogo. Permanecendo na tela.")
+                    next_screen = "game_config"
             elif result["action"] == "back_to_menu":
                 next_screen = "menu"
             else:

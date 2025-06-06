@@ -3,6 +3,9 @@ import sys
 import random
 import time
 from pygame.locals import *
+from databse.data_manager import search_questions_for_quiz, get_difficulty_id_by_name
+from databse.db_connector import getConnection
+
 
 # Importar config se existir
 try:
@@ -250,222 +253,13 @@ class Question:
         else:
             return "Dica: Esta pergunta requer conhecimento avançado. Analise todas as opções cuidadosamente!"
 
-# Gerador de perguntas mock (simulação para testes sem banco de dados)
-class MockQuestionGenerator:
-    def __init__(self, subject, grade, difficulty_mode="Automatico"):
-        self.subject = subject
-        self.grade = grade
-        self.difficulty_mode = difficulty_mode
-       
-        # Configurações para o prêmio em dinheiro por dificuldade
-        self.money_values = [
-            [1000, 2000, 3000, 5000, 10000],          # Fácil (perguntas 1-5)
-            [20000, 30000, 50000, 100000, 200000],    # Médio (perguntas 6-10)
-            [300000, 500000, 750000, 1000000, 2000000] # Difícil (perguntas 11-15)
-        ]
-       
-        # Mapeamento de nomes para índices de dificuldade
-        self.difficulty_map = {
-            "Facil": 0,
-            "Medio": 1,
-            "Dificil": 2
-        }
-   
-    def get_questions(self, count=TOTAL_QUESTIONS):
-        questions = []
-       
-        if self.difficulty_mode == "Automatico":
-            # Modo automático: progressão gradual de dificuldade
-            questions = self._get_automatic_difficulty_questions(count)
-        else:
-            # Modo de dificuldade fixa: todas as questões com a mesma dificuldade
-            difficulty_level = self.difficulty_map.get(self.difficulty_mode, 0)
-            questions = self._get_fixed_difficulty_questions(count, difficulty_level)
-       
-        return questions
-   
-    def _get_automatic_difficulty_questions(self, count):
-        """Gera questões com progressão automática de dificuldade"""
-        questions = []
-       
-        # Distribuição padrão: 5 fáceis, 5 médias, 5 difíceis
-        easy_count = min(5, count)
-        medium_count = min(5, count - easy_count)
-        hard_count = count - easy_count - medium_count
-       
-        # Adicionar perguntas fáceis
-        for i in range(easy_count):
-            question = self._generate_question(difficulty=0)
-            questions.append(question)
-       
-        # Adicionar perguntas médias
-        for i in range(medium_count):
-            question = self._generate_question(difficulty=1)
-            questions.append(question)
-       
-        # Adicionar perguntas difíceis
-        for i in range(hard_count):
-            question = self._generate_question(difficulty=2)
-            questions.append(question)
-       
-        return questions
-   
-    def _get_fixed_difficulty_questions(self, count, difficulty_level):
-        """Gera questões todas com a mesma dificuldade"""
-        questions = []
-       
-        for i in range(count):
-            question = self._generate_question(difficulty=difficulty_level)
-            questions.append(question)
-       
-        return questions
-   
-    def _generate_question(self, difficulty):
-        # Mock questions para diferentes matérias e séries
-        if self.subject == "Matematica":
-            if difficulty == 0:  # Fácil
-                questions_pool = [
-                    {
-                        "text": "Qual é o resultado de 7 x 8?",
-                        "options": ["54", "56", "64", "72"],
-                        "correct": 1
-                    },
-                    {
-                        "text": "Quanto é 15 + 23?",
-                        "options": ["38", "35", "40", "33"],
-                        "correct": 0
-                    },
-                    {
-                        "text": "Qual é o resultado de 144 ÷ 12?",
-                        "options": ["11", "12", "13", "14"],
-                        "correct": 1
-                    }
-                ]
-            elif difficulty == 1:  # Médio
-                questions_pool = [
-                    {
-                        "text": "Qual é a área de um círculo com raio 5cm? (Use π = 3.14)",
-                        "options": ["25π cm²", "10π cm²", "15π cm²", "20π cm²"],
-                        "correct": 0
-                    },
-                    {
-                        "text": "Resolva: 2x + 8 = 20. Qual o valor de x?",
-                        "options": ["4", "6", "8", "10"],
-                        "correct": 1
-                    },
-                    {
-                        "text": "Qual é o perímetro de um quadrado com lado de 7cm?",
-                        "options": ["28cm", "21cm", "14cm", "49cm"],
-                        "correct": 0
-                    }
-                ]
-            else:  # Difícil
-                questions_pool = [
-                    {
-                        "text": "Qual é a solução da equação 2x² - 5x - 3 = 0?",
-                        "options": ["x = 3 ou x = -0.5", "x = 2.5 ou x = -0.5", "x = 3 ou x = -1", "x = 2 ou x = -1.5"],
-                        "correct": 0
-                    },
-                    {
-                        "text": "Qual é a derivada de f(x) = 3x² + 2x - 1?",
-                        "options": ["6x + 2", "3x + 2", "6x - 1", "3x² + 2"],
-                        "correct": 0
-                    },
-                    {
-                        "text": "Calcule log₂(64):",
-                        "options": ["6", "8", "4", "5"],
-                        "correct": 0
-                    }
-                ]
-       
-        elif self.subject == "Fisica":
-            if difficulty == 0:  # Fácil
-                questions_pool = [
-                    {
-                        "text": "Qual é a unidade de medida da força no Sistema Internacional (SI)?",
-                        "options": ["Watt", "Joule", "Newton", "Pascal"],
-                        "correct": 2
-                    },
-                    {
-                        "text": "A que temperatura a água ferve ao nível do mar?",
-                        "options": ["90°C", "100°C", "110°C", "120°C"],
-                        "correct": 1
-                    }
-                ]
-            elif difficulty == 1:  # Médio
-                questions_pool = [
-                    {
-                        "text": "Um objeto é lançado verticalmente para cima. No ponto mais alto da trajetória:",
-                        "options": ["A velocidade e a aceleração são nulas", "A velocidade é nula e a aceleração é g", "A velocidade é g e a aceleração é nula", "A velocidade e a aceleração são iguais a g"],
-                        "correct": 1
-                    },
-                    {
-                        "text": "Qual é a velocidade da luz no vácuo?",
-                        "options": ["300.000 km/s", "3.000.000 km/s", "30.000 km/s", "3.000 km/s"],
-                        "correct": 0
-                    }
-                ]
-            else:  # Difícil
-                questions_pool = [
-                    {
-                        "text": "Um capacitor de placas paralelas está conectado a uma bateria. O que acontece com a capacitância se a distância entre as placas for duplicada?",
-                        "options": ["Aumenta 2 vezes", "Diminui pela metade", "Não muda", "Aumenta 4 vezes"],
-                        "correct": 1
-                    },
-                    {
-                        "text": "Qual é a energia de ligação por núcleon no ⁴He?",
-                        "options": ["7,07 MeV", "8,48 MeV", "6,25 MeV", "5,33 MeV"],
-                        "correct": 0
-                    }
-                ]
-       
-        else:  # Para outras matérias
-            if difficulty == 0:  # Fácil
-                questions_pool = [
-                    {
-                        "text": f"Pergunta fácil de {self.subject} para o {self.grade}",
-                        "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
-                        "correct": random.randint(0, 3)
-                    }
-                ]
-            elif difficulty == 1:  # Médio
-                questions_pool = [
-                    {
-                        "text": f"Pergunta média de {self.subject} para o {self.grade}",
-                        "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
-                        "correct": random.randint(0, 3)
-                    }
-                ]
-            else:  # Difícil
-                questions_pool = [
-                    {
-                        "text": f"Pergunta difícil de {self.subject} para o {self.grade}",
-                        "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
-                        "correct": random.randint(0, 3)
-                    }
-                ]
-       
-        # Selecionar uma questão aleatória do pool
-        selected = random.choice(questions_pool)
-        return Question(selected["text"], selected["options"], selected["correct"], difficulty)
-   
-    def get_money_for_question(self, question_number):
-        # Calcular o valor baseado na dificuldade e posição da questão
-        if self.difficulty_mode == "Automatico":
-            # Modo automático: usar a distribuição padrão
-            difficulty = 0 if question_number < 5 else 1 if question_number < 10 else 2
-            value_index = question_number % 5
-        else:
-            # Modo de dificuldade fixa: usar sempre a mesma dificuldade
-            difficulty = self.difficulty_map.get(self.difficulty_mode, 0)
-            # Distribuir os valores de forma crescente dentro da dificuldade
-            values_per_difficulty = len(self.money_values[0])
-            value_index = (question_number * values_per_difficulty) // TOTAL_QUESTIONS
-            value_index = min(value_index, values_per_difficulty - 1)
-       
-        return self.money_values[difficulty][value_index]
-
 class QuizScreen:
+    DEFAULT_MONEY_VALUES = [
+        [1000, 2000, 3000, 5000, 10000],          # Fácil (nível 0)
+        [20000, 30000, 50000, 100000, 200000],    # Médio (nível 1)
+        [300000, 500000, 750000, 1000000, 2000000] # Difícil (nível 2)
+    ]
+    
     def __init__(self, screen, user_data, game_config):
         self.screen = screen
         self.running = True
@@ -487,13 +281,53 @@ class QuizScreen:
         self.small_font = pygame.font.SysFont('Arial', 14)
        
         # Gerar perguntas para o quiz (com suporte a dificuldade)
-        self.question_generator = MockQuestionGenerator(
-            game_config["subject"],
-            game_config["grade"],
-            game_config.get("difficulty", "Automatico")
-        )
-        self.questions = self.question_generator.get_questions(TOTAL_QUESTIONS)
-       
+        print(f"QuizScreen: Configurações recebidas para buscar questões: {self.game_config}")
+        self.questions = [] # Inicializa como lista vazia por segurança
+        try:
+            # Chama a função do data_manager
+            self.questions = search_questions_for_quiz(
+                subject_name=self.game_config.get("subject_name"),
+                grade_name=self.game_config.get("grade_name"),
+                difficulty_name=self.game_config.get("difficulty_name_selected"),
+                connection = getConnection()
+            )
+            for question_dict in self.questions:
+                question_dict["used_help"] = {"skip": False, "eliminate": False, "hint": False}
+        except NameError as ne:
+            print(f"Erro de Configuração (QuizScreen): Função não encontrada. Verifique os imports. {ne}")
+        except Exception as e:
+            print(f"Erro inesperado (QuizScreen) ao carregar questões: {e}")
+
+        # Verifica se as questões foram carregadas para definir o estado do jogo
+        if not self.questions:
+            self.error_message = "Não há questões para esta configuração."
+            self.message_timer = 180 
+            self.game_over = True     
+            print(f"AVISO (QuizScreen): Nenhuma questão carregada. Jogo não pode iniciar.")
+        else:
+            self.game_over = False
+            print(f"QuizScreen: {len(self.questions)} questões carregadas do banco.")
+
+        # Prepara a lógica de pontuação (cálculo de dinheiro)
+        self.money_values = self.DEFAULT_MONEY_VALUES 
+        self.db_id_to_score_level_map = {} 
+        if not self.game_over: 
+            try:
+                # Busca os IDs das dificuldades uma vez para usar no cálculo de score
+                id_facil = get_difficulty_id_by_name("Facil", getConnection)
+                id_medio = get_difficulty_id_by_name("Medio", getConnection)
+                id_dificil = get_difficulty_id_by_name("Dificil", getConnection)
+
+                if id_facil is not None: self.db_id_to_score_level_map[id_facil] = 0
+                if id_medio is not None: self.db_id_to_score_level_map[id_medio] = 1
+                if id_dificil is not None: self.db_id_to_score_level_map[id_dificil] = 2
+                
+                print(f"DEBUG QuizScreen: Mapa de dificuldade para score: {self.db_id_to_score_level_map}")
+
+            except Exception as e:
+                print(f"Erro ao buscar IDs de dificuldade para o mapa de score: {e}")
+                
+
         # Estado do quiz
         self.current_question = 0
         self.selected_option = None  # Opção selecionada visualmente (não confirmada)
@@ -688,36 +522,44 @@ class QuizScreen:
         self.update_question_display()
        
     def update_question_display(self):
+        """
+        Atualiza a UI para mostrar a pergunta e as opções atuais.
+        """
         if self.current_question < len(self.questions):
-            question = self.questions[self.current_question]
-           
-            # Atualizar textos dos botões de opções
+            question_data = self.questions[self.current_question] 
+            
             option_labels = ["A", "B", "C", "D"]
-            for i, option in enumerate(question.options):
-                self.option_buttons[i].text = f"{option_labels[i]}) {option}"
-                self.option_buttons[i].text_surf = self.option_font.render(
-                    self.option_buttons[i].text, True, (50, 50, 50)
-                )
-                self.option_buttons[i].text_rect = self.option_buttons[i].text_surf.get_rect(
-                    center=self.option_buttons[i].rect.center
-                )
-                self.option_buttons[i].correct = None  # Resetar estado de correto/incorreto
-               
-            # Resetar seleção e estados
+            question_options = question_data.get("options", []) 
+            
+            for i, option_text in enumerate(question_options):
+                if i < len(self.option_buttons):
+                    button = self.option_buttons[i]
+                    button.text = f"{option_labels[i]}) {option_text}"
+                    button.text_surf = self.option_font.render(
+                        button.text, True, (50, 50, 50)
+                    )
+                    button.text_rect = button.text_surf.get_rect(
+                        center=button.rect.center
+                    )
+                    button.correct = None 
+            
+            # Resetar seleção e estados do quiz 
             self.selected_option = None
             self.confirmed_option = None
             self.auto_advance = False
-               
+                
             # Atualizar barra de progresso
             self.progress_bar.update(self.current_question)
    
     def handle_help_button(self, button):
         """Processa os botões de ajuda"""
-        current_question = self.questions[self.current_question]
-       
-        if button == self.skip_button and not current_question.used_help["skip"]:
-            # Pular pergunta (avança para a próxima sem penalidade)
-            current_question.used_help["skip"] = True
+        # current_question_data é um dicionário da lista self.questions
+        current_question_data = self.questions[self.current_question]
+    
+        if button == self.skip_button and not current_question_data["used_help"]["skip"]:
+            # Altera o valor dentro do dicionário
+            current_question_data["used_help"]["skip"] = True
+        
             # Resetar estado antes de pular
             self.selected_option = None
             self.confirmed_option = None
@@ -725,25 +567,28 @@ class QuizScreen:
             self.auto_advance = False
             self.waiting_for_next = False
             self.go_to_next_question()
-           
-        elif button == self.eliminate_button and not current_question.used_help["eliminate"]:
-            # Eliminar duas alternativas incorretas
-            current_question.used_help["eliminate"] = True
+        
+        elif button == self.eliminate_button and not current_question_data["used_help"]["eliminate"]:
+            # Altera o valor dentro do dicionário
+            current_question_data["used_help"]["eliminate"] = True
+        
             options_to_eliminate = 2
-            correct_index = current_question.correct_option
-           
+            # Acessa a opção correta usando a chave do dicionário
+            correct_index = current_question_data.get("correct_option")
+        
             # Encontra índices das alternativas incorretas
             wrong_indices = [i for i in range(4) if i != correct_index]
             random.shuffle(wrong_indices)
-           
+        
             # Elimina até 2 alternativas incorretas
             for i in wrong_indices[:options_to_eliminate]:
+                # Limpa o texto dos botões correspondentes
                 self.option_buttons[i].text = ""
                 self.option_buttons[i].text_surf = self.option_font.render("", True, (50, 50, 50))
-               
-        elif button == self.hint_button and not current_question.used_help["hint"]:
-            # Mostrar dica sobre o tema
-            current_question.used_help["hint"] = True
+            
+        elif button == self.hint_button and not current_question_data["used_help"]["hint"]:
+            # Altera o valor dentro do dicionário
+            current_question_data["used_help"]["hint"] = True
             self.show_hint = True
    
     def handle_events(self):
@@ -814,33 +659,80 @@ class QuizScreen:
                         self.show_result = True
        
         return {"action": "none"}
+    
+    def get_money_for_question(self, current_question_index):
+        """
+        Calcula o valor da questão atual baseado na dificuldade do modo de jogo
+        ou na dificuldade da própria questão vinda do banco.
+        """
+        if not self.questions or current_question_index >= len(self.questions):
+            return 0
+
+        difficulty_level_for_scoring = 0 
+        difficulty_mode_selected = self.game_config.get("difficulty_name_selected")
+
+        if difficulty_mode_selected == "Automatico":
+            # No modo automático, a dificuldade é baseada no índice da pergunta no quiz
+            if current_question_index < CHECKPOINT_INTERVALS:       # Perguntas 0-4
+                difficulty_level_for_scoring = 0  # Nível Fácil
+            elif current_question_index < CHECKPOINT_INTERVALS * 2: # Perguntas 5-9
+                difficulty_level_for_scoring = 1  # Nível Médio
+            else: # Perguntas 10-14
+                difficulty_level_for_scoring = 2  # Nível Difícil
+        else:
+            # No modo de dificuldade fixa, usa o ID da dificuldade da questão atual
+            current_question_data = self.questions[current_question_index]
+            question_db_difficulty_id = current_question_data.get("difficulty_id")
+            difficulty_level_for_scoring = self.db_id_to_score_level_map.get(question_db_difficulty_id, 0)
+        
+        value_index = current_question_index % CHECKPOINT_INTERVALS
+        
+        try:
+            return self.money_values[difficulty_level_for_scoring][value_index]
+        except IndexError:
+            print(f"Erro ao buscar valor para questão: nível={difficulty_level_for_scoring}, índice={value_index}")
+            return 0
    
     def check_answer(self):
-        current = self.questions[self.current_question]
-        self.answer_correct = (self.confirmed_option == current.correct_option)
-       
-        # Atualizar aparência dos botões
+        # Garante que não haverá erro se a lista de questões estiver vazia ou o índice for inválido
+        if self.current_question >= len(self.questions):
+            print("AVISO (check_answer): Tentativa de checar resposta para uma questão inválida.")
+            self.game_over = True
+            return
+
+        # Pega os dados da questão atual (que é um dicionário)
+        current_q_data = self.questions[self.current_question]
+        
+        # Verifica se a resposta está correta usando a chave do dicionário
+        self.answer_correct = (self.confirmed_option == current_q_data.get("correct_option"))
+        
+        # --- Lógica para colorir os botões de resposta (importante para feedback visual) ---
         for i, button in enumerate(self.option_buttons):
-            if i == current.correct_option:
+            if i == current_q_data.get("correct_option"):
+                # Marca o botão da resposta correta
                 button.correct = True
-            elif i == self.confirmed_option and i != current.correct_option:
+            elif i == self.confirmed_option and not self.answer_correct:
+                # Marca o botão da resposta incorreta que o usuário selecionou
                 button.correct = False
-       
-        # Atualizar dinheiro
+        
+        # --- Lógica para atualizar dinheiro e estado do jogo ---
         if self.answer_correct:
-            self.accumulated_money = self.question_generator.get_money_for_question(self.current_question)
-           
-            # Verificar se atingiu um checkpoint
-            next_question = self.current_question + 1
-            if next_question % CHECKPOINT_INTERVALS == 0:
+            # Se a resposta estiver correta, chama o novo método para calcular a pontuação
+            self.accumulated_money = self.get_money_for_question(self.current_question)
+            
+            # Verifica se atingiu um checkpoint para salvar o dinheiro
+            next_question_index = self.current_question + 1
+            if next_question_index % CHECKPOINT_INTERVALS == 0:
                 self.saved_money = self.accumulated_money
-           
-            # Configurar avanço automático para resposta correta
+            
+            # Configura timers para avançar para a próxima questão automaticamente
             self.auto_advance = True
             self.waiting_for_next = True
             self.wait_timer = pygame.time.get_ticks()
         else:
-            # Resposta errada - termina o jogo, ganha o dinheiro do último checkpoint
+            # Se a resposta estiver errada, configura um timer para mostrar o resultado
+            # e, depois do timer, o jogo terminará (a lógica para self.game_over = True
+            # está no seu método `update()`)
             self.waiting_for_next = True
             self.wait_timer = pygame.time.get_ticks()
    
@@ -898,7 +790,7 @@ class QuizScreen:
        
         # Informações do quiz (no painel esquerdo)
         difficulty_mode = self.game_config.get("difficulty", "Automatico")
-        info_text = f"{self.game_config['subject']} - {self.game_config['grade']}"
+        info_text = f"{self.game_config.get('subject_name', '')} - {self.game_config.get('grade_name', '')}"
         info_surf = self.info_font.render(info_text, True, (80, 80, 80))
         info_rect = info_surf.get_rect(topleft=(40, 50))
         self.screen.blit(info_surf, info_rect)
@@ -955,7 +847,7 @@ class QuizScreen:
             self.question_panel.draw(self.screen)
            
             # Quebra o texto da pergunta em múltiplas linhas se necessário
-            question_text = self.questions[self.current_question].text
+            question_text = self.questions[self.current_question].get("text", "")
             lines = self.wrap_text(question_text, self.question_font, self.left_panel.rect.width - 60)
            
             # Desenha cada linha da pergunta
@@ -981,7 +873,7 @@ class QuizScreen:
             # Se estiver mostrando o resultado, desenhar feedback
             if self.show_result:
                 # Mostrar valor da pergunta
-                value_text = f"Valor: R$ {self.question_generator.get_money_for_question(self.current_question):,}"
+                value_text = f"Valor: R$ {self.get_money_for_question(self.current_question):,}"
                 value_surf = self.info_font.render(value_text, True, (50, 50, 50))
                 value_rect = value_surf.get_rect(center=(self.left_panel.rect.width // 2 + 20, self.height - 120))
                 self.screen.blit(value_surf, value_rect)
@@ -1040,7 +932,7 @@ class QuizScreen:
                 self.screen.blit(hint_title, hint_title_rect)
                
                 # Desenhar texto da dica
-                hint_text = self.questions[self.current_question].hint
+                hint_text = self.questions[self.current_question].get("hint", "")
                 hint_lines = self.wrap_text(hint_text, self.question_font, self.hint_panel.rect.width - 40)
                
                 for i, line in enumerate(hint_lines):

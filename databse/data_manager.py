@@ -1,6 +1,6 @@
 from databse.db_connector import getConnection
 import mysql.connector
-
+from config import TOTAL_QUESTIONS, CHECKPOINT_INTERVALS
 
 def add_user_to_database(user_data, getConnection):
     connection = None; cursor = None
@@ -434,7 +434,7 @@ def adicionar_turma_db(dados_turma, funcao_get_conexao):
             except mysql.connector.Error as con_err:
                 print(f"Erro ao fechar a conexão: {con_err}")
 
-def search_ranking_data_from_db(get_connection_func, serie_filter=None):
+def search_ranking_data_from_db(serie_filter=None):
     # Busca os dados dos alunos do banco de dados para o ranking
     connection = None
     cursor = None
@@ -447,7 +447,7 @@ def search_ranking_data_from_db(get_connection_func, serie_filter=None):
     col_pontuacao = "pont_total"
 
     try:
-        connection = getConnection() # Chama a função de conexão passada
+        connection = getConnection() 
         if not connection:
             print("Erro (data_manager): Não foi possível conectar ao banco.")
             return lista_alunos_ranking
@@ -799,3 +799,106 @@ def get_serie_id_by_name(serie_name_to_find, getConnection): # NOVA FUNÇÃO AUX
         if cursor: cursor.close()
         if connection and connection.is_connected(): connection.close()
     return serie_id
+
+def search_questions_for_quiz(subject_name, grade_name, difficulty_name, connection):
+    quiz_questions = []
+
+    # Nomes de tabelas e colunas conforme seu script SQL
+    tbl_q = "questoes"
+    col_q_id = "id_questao"; col_q_enunciado = "enunciado"; col_q_fk_materia = "id_materia"
+    col_q_fk_serie = "id_serie"; col_q_fk_dificuldade = "id_dificuldade"
+    col_q_alt1 = "alternativa_1"; col_q_alt2 = "alternativa_2"; col_q_alt3 = "alternativa_3"
+    col_q_alt4 = "alternativa_4"; col_q_idx_correta = "indice_alternativa_correta"
+    col_q_explicacao = "explicacao"
+
+    def _format_db_row_to_question_dict(db_row):
+        # Função para transformar uma linha do banco em um dicionário de questão.
+        return {
+            "id": db_row["id"],
+            "text": db_row["text"],
+            "options": [db_row["opt1"], db_row["opt2"], db_row["opt3"], db_row["opt4"]],
+            "correct_option": db_row["correct_option"],
+            "hint": db_row["hint"],
+            "difficulty_id": db_row["difficulty_id"]
+        }
+
+    try:
+        connection = getConnection()
+        if not connection:
+            print("Erro (search_questions): Falha ao obter conexão.")
+            return quiz_questions
+        
+        cursor = connection.cursor(dictionary=True)
+
+        # 1. Obter IDs de matéria e série
+        subject_id = get_materia_id_by_name(subject_name, getConnection)
+        grade_id = get_serie_id_by_name(grade_name, getConnection)
+
+        if subject_id is None or grade_id is None:
+            print(f"Erro: Matéria '{subject_name}' ou Série '{grade_name}' não encontradas no banco.")
+            return []
+
+        # SQL base para selecionar os campos
+        sql_select_base = f"""
+            SELECT 
+                {col_q_id} AS id, {col_q_enunciado} AS text, 
+                {col_q_alt1} AS opt1, {col_q_alt2} AS opt2, 
+                {col_q_alt3} AS opt3, {col_q_alt4} AS opt4,
+                {col_q_idx_correta} AS correct_option, 
+                {col_q_explicacao} AS hint,
+                {col_q_fk_dificuldade} AS difficulty_id
+            FROM {tbl_q}"""
+
+        if difficulty_name != "Automatico":
+            difficulty_id = get_difficulty_id_by_name(difficulty_name, getConnection)
+            if difficulty_id is None:
+                print(f"Erro: Dificuldade '{difficulty_name}' não encontrada.")
+                return []
+
+            print(f"DEBUG (data_manager): Buscando {TOTAL_QUESTIONS} questões de dificuldade ID: {difficulty_id}")
+            
+            sql_query = f"""
+                {sql_select_base}
+                WHERE {col_q_fk_materia} = %s AND {col_q_fk_serie} = %s AND {col_q_fk_dificuldade} = %s
+                ORDER BY RAND() 
+                LIMIT %s
+            """
+            cursor.execute(sql_query, (subject_id, grade_id, difficulty_id, TOTAL_QUESTIONS))
+            results = cursor.fetchall()
+            for row in results:
+                quiz_questions.append(_format_db_row_to_question_dict(row))
+
+        else: # difficulty_name == "Automatico"
+            print(f"DEBUG (data_manager): Buscando questões no modo Automático.")
+            
+            difficulty_ids_map = {
+                "Facil": get_difficulty_id_by_name("Facil", getConnection),
+                "Medio": get_difficulty_id_by_name("Medio", getConnection),
+                "Dificil": get_difficulty_id_by_name("Dificil", getConnection)
+            }
+            
+            for diff_name, diff_id in difficulty_ids_map.items():
+                if diff_id is not None:
+                    print(f"DEBUG (data_manager): Buscando {CHECKPOINT_INTERVALS} questões de dificuldade '{diff_name}' (ID: {diff_id})")
+                    sql_query_tier = f"""
+                        {sql_select_base}
+                        WHERE {col_q_fk_materia} = %s AND {col_q_fk_serie} = %s AND {col_q_fk_dificuldade} = %s
+                        ORDER BY RAND() 
+                        LIMIT %s
+                    """
+                    cursor.execute(sql_query_tier, (subject_id, grade_id, diff_id, CHECKPOINT_INTERVALS))
+                    results_tier = cursor.fetchall()
+                    for row in results_tier:
+                        quiz_questions.append(_format_db_row_to_question_dict(row))
+                else:
+                    print(f"AVISO (data_manager): ID para dificuldade '{diff_name}' não encontrado. Pulando esta faixa.")
+
+    except mysql.connector.Error as err:
+        print(f"Erro de banco de dados (search_questions_for_quiz): {err}")
+    except Exception as e:
+        print(f"Erro inesperado (search_questions_for_quiz): {e}")
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+            
+    return quiz_questions

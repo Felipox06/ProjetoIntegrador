@@ -1,6 +1,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import get_materia_id_by_name, get_serie_id_by_name, get_difficulty_id_by_name
+from databse.db_connector import getConnection
 
 # Matérias e séries padrão sem acentos
 DEFAULT_SUBJECTS = [
@@ -270,74 +272,145 @@ class GameConfigScreen:
             ))
            
         return buttons
+    
+    def _prepare_game_settings(self):
+        """
+        Prepara os dados de configuração do jogo, buscando IDs no banco
+        com base nas seleções de NOME feitas na UI.
+        Retorna um dicionário com os parâmetros para o quiz, ou None se houver erro.
+        """
+        # 1. Obtenha os NOMES selecionados na UI
+        subject_name = self.selected_subject
+        grade_name = self.selected_grade
+        difficulty_name = self.selected_difficulty # Pode ser "Automatico", "Facil", etc.
+
+        # 2. Validação básica
+        if not all([subject_name, grade_name, difficulty_name]):
+            # Defina uma mensagem de erro para a UI aqui, se tiver esse mecanismo
+            # Ex: self.error_message = "Selecione Matéria, Série e Dificuldade!"
+            # self.message_timer = 180 
+            print("ERRO (GameConfigScreen): Opções não selecionadas.")
+            return None # Indica que não deve prosseguir
+
+        # 3. Busque os IDs correspondentes no banco de dados
+        try:
+            print(f"GameConfigScreen: Buscando ID para Matéria '{subject_name}'...")
+            subject_id = get_materia_id_by_name(subject_name, getConnection)
+            
+            print(f"GameConfigScreen: Buscando ID para Série '{grade_name}'...")
+            grade_id = get_serie_id_by_name(grade_name, getConnection)
+            
+            difficulty_id = None # Será None se difficulty_name for "Automatico"
+            if difficulty_name != "Automatico":
+                print(f"GameConfigScreen: Buscando ID para Dificuldade '{difficulty_name}'...")
+                difficulty_id = get_difficulty_id_by_name(difficulty_name, getConnection)
+                if difficulty_id is None: # Dificuldade específica selecionada mas não encontrada
+                    # self.error_message = f"Dificuldade '{difficulty_name}' não encontrada."
+                    print(f"GameConfigScreen ERRO: Dificuldade '{difficulty_name}' não encontrada no sistema.")
+                    return None
+            
+        except Exception as e:
+            # self.error_message = f"Erro de Conexão/DB: {e}"
+            print(f"GameConfigScreen ERRO: Erro de Conexão/DB ao buscar IDs: {e}")
+            return None
+
+        # 4. Verifique se os IDs foram encontrados
+        if subject_id is None:
+            # self.error_message = f"Matéria '{subject_name}' não encontrada."
+            print(f"GameConfigScreen ERRO: Matéria '{subject_name}' não encontrada no banco.")
+            return None
+        
+        if grade_id is None:
+            # self.error_message = f"Série '{grade_name}' não encontrada."
+            print(f"GameConfigScreen ERRO: Série '{grade_name}' não encontrada no banco.")
+            return None
+        
+        print(f"GameConfigScreen: IDs preparados - MatériaID: {subject_id}, SérieID: {grade_id}, DificuldadeID: {difficulty_id} (Modo: {difficulty_name})")
+
+        # 5. Monte o dicionário de configuração do jogo para a QuizScreen
+        game_settings_data = {
+            "subject_name": subject_name,
+            "subject_id": subject_id,
+            "grade_name": grade_name, 
+            "grade_id": grade_id,
+            "difficulty_name_selected": difficulty_name,
+            "difficulty_id": difficulty_id 
+        }
+        
+        print(f"DEBUG: Nomes Selecionados: ('{subject_name}', '{grade_name}', '{difficulty_name}')")
+        print(f"DEBUG: IDs Encontrados: (Matéria: {subject_id}, Série: {grade_id}, Dificuldade: {difficulty_id})")
+
+        
+        return game_settings_data
    
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-               
+            
             if event.type == MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-               
+                
+                # Variável para controlar se um botão de filtro foi clicado e o loop deve reiniciar
+                filter_button_clicked = False
+
                 # Verificar cliques nos botões de matéria
                 for i, button in enumerate(self.subject_buttons):
                     if button.is_clicked(mouse_pos):
-                        # Desativar todos os outros botões de matéria
                         for j, other_button in enumerate(self.subject_buttons):
                             other_button.is_active = (j == i)
-                       
                         self.selected_subject = SUBJECTS[i]
-                        break
-               
+                        filter_button_clicked = True
+                        break # Processou um clique, sai do loop de botões de matéria
+                if filter_button_clicked:
+                    continue # Reinicia o loop de eventos para registrar a mudança visual
+
                 # Verificar cliques nos botões de série
                 for i, button in enumerate(self.grade_buttons):
                     if button.is_clicked(mouse_pos):
-                        # Desativar todos os outros botões de série
                         for j, other_button in enumerate(self.grade_buttons):
                             other_button.is_active = (j == i)
-                       
                         self.selected_grade = GRADE_LEVELS[i]
+                        filter_button_clicked = True
                         break
-               
+                if filter_button_clicked:
+                    continue
+
                 # Verificar cliques nos botões de dificuldade
                 for i, button in enumerate(self.difficulty_buttons):
                     if button.is_clicked(mouse_pos):
-                        # Desativar todos os outros botões de dificuldade
                         for j, other_button in enumerate(self.difficulty_buttons):
                             other_button.is_active = (j == i)
-                       
                         self.selected_difficulty = DIFFICULTY_LEVELS[i]
+                        filter_button_clicked = True
                         break
-               
+                if filter_button_clicked:
+                    continue
+
                 # Verificar clique no botão INICIAR
                 if self.start_button.is_clicked(mouse_pos):
                     self.start_button.pressed = True
-                   
-                    # Verificar se matéria e série foram selecionadas
-                    # (dificuldade sempre tem um valor padrão)
-                    if self.selected_subject and self.selected_grade:
+                    
+                    # Chama o método auxiliar que busca os IDs e valida as seleções
+                    game_settings = self._prepare_game_settings()
+                    
+                    if game_settings: # Se os parâmetros foram obtidos com sucesso (não é None)
                         return {
                             "action": "start_game",
-                            "subject": self.selected_subject,
-                            "grade": self.selected_grade,
-                            "difficulty": self.selected_difficulty,
-                            # TODO: Integração com banco de dados
-                            # Quando implementar o banco, aqui será onde passaremos
-                            # os IDs das configurações selecionadas para consultar
-                            # as questões no banco de dados
-                            "database_config": {
-                                "subject_id": None,  # Será preenchido com ID da matéria
-                                "grade_id": None,    # Será preenchido com ID da série
-                                "difficulty_mode": self.selected_difficulty
-                            }
+                            # Passa o dicionário completo com nomes e IDs
+                            "game_settings": game_settings 
                         }
-               
+                    else:
+                        # Se for None, um erro ocorreu e a mensagem já foi impressa (e deveria ser mostrada na UI)
+                        # Retorna "none" para permanecer na tela e o usuário corrigir.
+                        return {"action": "none"} 
+
                 # Verificar clique no botão VOLTAR
                 if self.back_button.is_clicked(mouse_pos):
                     self.back_button.pressed = True
                     return {"action": "back_to_menu"}
-       
+        
         return {"action": "none"}
    
     def update(self):
