@@ -165,7 +165,7 @@ class UserListItemWithCheckbox:
         surface.blit(name_surf, name_rect)
         
         # Tipo e informações específicas
-        if self.user_data['tipo'] == 'Aluno':
+        if self.user_data['tipo'] == 'student':
             info_text = f"Aluno - {self.user_data.get('serie', '')} {self.user_data.get('classe', '')}"
             type_color = COLORS.get("success", (75, 181, 67))
         else:
@@ -352,9 +352,9 @@ class RemoveUserScreen:
         if self.current_filter == "Todos":
             self.filtered_users = self.all_users.copy()
         elif self.current_filter == "Alunos":
-            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'Aluno']
+            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'student']
         elif self.current_filter == "Professores":
-            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'Professor']
+            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'teacher']
         
         self.scroll_offset = 0
         self.update_selected_users()

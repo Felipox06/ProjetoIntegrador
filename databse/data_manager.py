@@ -1,6 +1,7 @@
 from databse.db_connector import getConnection
 import mysql.connector
 from config import TOTAL_QUESTIONS, CHECKPOINT_INTERVALS
+from datetime import datetime
 
 def add_user_to_database(user_data, getConnection):
     connection = None; cursor = None
@@ -59,7 +60,7 @@ def update_user_in_db(user_ra, user_type, fields_to_update, getConnection):
     id_column_name = ""
     column_map = {} # Mapeia chaves do dict para nomes de colunas no DB
 
-    if user_type == "Aluno":
+    if user_type == "student":
         table_name = "alunos"
         id_column_name = "aluno_RA"
         column_map = {
@@ -67,7 +68,7 @@ def update_user_in_db(user_ra, user_type, fields_to_update, getConnection):
             "turma": "turma", # Assumindo que 'turma' é a coluna no DB para Alunos
             "senha": "senha_aluno"
         }
-    elif user_type == "Professor":
+    elif user_type == "teacher":
         table_name = "professores"
         id_column_name = "prof_RA"
         column_map = {
@@ -134,10 +135,10 @@ def delete_user_from_db(user_ra, user_type, getConnection):
     table_name = ""
     id_column_name = ""
 
-    if user_type == "Aluno":
+    if user_type == "student":
         table_name = "alunos"
         id_column_name = "aluno_RA"
-    elif user_type == "Professor":
+    elif user_type == "teacher":
         table_name = "professores"
         id_column_name = "prof_RA"
     else:
@@ -434,7 +435,7 @@ def adicionar_turma_db(dados_turma, funcao_get_conexao):
             except mysql.connector.Error as con_err:
                 print(f"Erro ao fechar a conexão: {con_err}")
 
-def search_ranking_data_from_db(serie_filter=None):
+def search_ranking_data_from_db(getConnection, serie_filter=None):
     # Busca os dados dos alunos do banco de dados para o ranking
     connection = None
     cursor = None
@@ -902,3 +903,221 @@ def search_questions_for_quiz(subject_name, grade_name, difficulty_name, connect
         if connection and connection.is_connected(): connection.close()
             
     return quiz_questions
+
+def record_game_session(player_ra, game_materia_id, game_serie_id, game_score, connection):
+   
+    # Registra o resultado de uma sessão de jogo e atualiza os totais do aluno.
+
+    connection = None
+    cursor = None
+    
+    # Nomes das tabelas e colunas (confira com seu SQL)
+    tbl_estatisticas = "estatisticas_jogos"
+    tbl_alunos = "alunos"
+    col_al_total_jogos = "total_jogos" # Nome da coluna que você confirmou
+    col_al_pont_total = "pont_total"
+    col_al_ra_where = "aluno_RA"
+    
+    try:
+        # Usa a função que foi passada como argumento para obter a conexão
+        connection = getConnection() 
+        if not connection:
+            return False, "Falha ao obter conexão com o banco de dados."
+        
+        cursor = connection.cursor()
+        
+        print("\n--- DEBUG (record_game_session): INICIANDO TRANSAÇÃO ---")
+        
+        # 1. Inserir na tabela estatisticas_jogos
+        sql_insert_game = """
+            INSERT INTO estatisticas_jogos 
+            (aluno_RA, id_materia, id_serie, pontuacao_obtida_jogo)
+            VALUES (%s, %s, %s, %s)
+        """
+        game_data = (player_ra, game_materia_id, game_serie_id, game_score)
+        
+        print(f"DEBUG: Executando INSERT em '{tbl_estatisticas}' com dados: {game_data}")
+        cursor.execute(sql_insert_game, game_data)
+        # O cursor.rowcount nos diz se a linha foi inserida com sucesso. Deve ser 1.
+        print(f"  -> Linhas afetadas pelo INSERT: {cursor.rowcount}")
+
+        # 2. Atualizar a tabela alunos
+        sql_update_aluno = f"""
+            UPDATE {tbl_alunos}
+            SET 
+                {col_al_pont_total} = {col_al_pont_total} + %s,
+                {col_al_total_jogos} = {col_al_total_jogos} + 1
+            WHERE {col_al_ra_where} = %s
+        """
+        aluno_update_data = (game_score, player_ra)
+
+        print(f"DEBUG: Executando UPDATE em '{tbl_alunos}' com dados: {aluno_update_data}")
+        cursor.execute(sql_update_aluno, aluno_update_data)
+        # O cursor.rowcount aqui também deve ser 1.
+        print(f"  -> Linhas afetadas pelo UPDATE: {cursor.rowcount}")
+
+        print("DEBUG: Executando commit da transação...")
+        connection.commit() # Confirma as duas operações no banco
+        print("--- DEBUG: TRANSAÇÃO CONCLUÍDA COM SUCESSO ---")
+
+        return True, "Resultado do jogo registrado com sucesso."
+
+    except mysql.connector.Error as err:
+        if connection:
+            print(f"ERRO de banco de dados ({err.errno}): {err}. Fazendo rollback...")
+            connection.rollback()
+        return False, f"Erro ao registrar jogo: {err}"
+    except Exception as e:
+        if connection:
+            print(f"ERRO inesperado: {e}. Fazendo rollback...")
+            connection.rollback()
+        return False, f"Erro inesperado ao registrar jogo: {e}"
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+
+
+def fetch_player_history_and_stats(player_ra, getConnection, limit=5):
+    # Busca as estatísticas gerais de um aluno e seu histórico de jogos recentes.
+
+    connection = None
+    cursor = None
+    
+    try:
+        connection = getConnection()
+        if not connection:
+            print("Erro (fetch_history): Falha ao obter conexão.")
+            return None
+            
+        cursor = connection.cursor(dictionary=True) # Retorna resultados como dicionários
+
+        # Busca estatísticas gerais da tabela alunos
+        stats = {}
+        sql_stats = "SELECT pont_total, total_jogos FROM alunos WHERE aluno_RA = %s"
+        cursor.execute(sql_stats, (player_ra,))
+        stats_result = cursor.fetchone()
+        
+        if stats_result:
+            stats = {
+                "total_score": stats_result.get("pont_total", 0),
+                "total_games": stats_result.get("total_jogos", 0)
+            }
+        else:
+            return None # Aluno não encontrado
+
+        # 2. Buscar histórico de jogos recentes
+        history = []
+        sql_history = """
+            SELECT 
+                ej.data_jogo, 
+                m.nome_materia, 
+                s.nome_serie, 
+                ej.pontuacao_obtida_jogo
+            FROM 
+                estatisticas_jogos ej
+            JOIN 
+                materias m ON ej.id_materia = m.id_materia
+            JOIN
+                serie s ON ej.id_serie = s.id_serie
+            WHERE 
+                ej.aluno_RA = %s 
+            ORDER BY 
+                ej.data_jogo DESC 
+            LIMIT %s
+        """
+        cursor.execute(sql_history, (player_ra, limit))
+        history_results = cursor.fetchall()
+
+        for game in history_results:
+            history.append({
+                "date": game.get("data_jogo"), # Será um objeto datetime
+                "subject": game.get("nome_materia"),
+                "grade": game.get("nome_serie"),
+                "score": game.get("pontuacao_obtida_jogo")
+            })
+
+        return {"summary_stats": stats, "recent_games": history}
+
+    except mysql.connector.Error as err:
+        print(f"Erro de banco de dados (fetch_history): {err}")
+    except Exception as e:
+        print(f"Erro inesperado (fetch_history): {e}")
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+    
+    return None
+
+def verify_user_credentials_from_db(input_ra, input_password, selected_user_type, getConnection):
+    """
+    Verifica as credenciais de login no banco para o tipo de usuário especificado.
+    Retorna um dicionário com os dados do usuário em caso de sucesso.
+    """
+    connection = None
+    cursor = None
+    user_data = None
+
+    # Nomes das tabelas e colunas (CONFIRA COM SEU SCRIPT SQL!)
+    tbl_alunos = "alunos"; col_al_ra = "aluno_RA"; col_al_nome = "nome_aluno"; 
+    col_al_senha = "senha_aluno"; col_al_turma = "turma"
+    
+    tbl_prof = "professores"; col_pr_ra = "prof_RA"; col_pr_nome = "nome_prof"; 
+    col_pr_senha = "senha_prof"; col_pr_fk_materia = "id_materia" # FK em professores
+    
+    tbl_materias = "materias"; col_mat_id_pk = "id_materia"; col_mat_nome = "nome_materia"
+
+    # ALERTA DE SEGURANÇA: Esta função compara senhas em texto plano.
+    # É altamente recomendável usar hashing de senhas em aplicações reais.
+
+    try:
+        connection = getConnection()
+        if not connection:
+            print("Erro (verify_credentials): Falha ao obter conexão.")
+            return None
+        
+        cursor = connection.cursor(dictionary=True) # Retorna resultados como dicionários
+
+        if selected_user_type == "student":
+            sql_query = f"SELECT {col_al_ra} AS RA, {col_al_nome} AS nome, {col_al_senha} AS senha_db, {col_al_turma} AS turma FROM {tbl_alunos} WHERE {col_al_ra} = %s"
+            cursor.execute(sql_query, (input_ra,))
+            db_result = cursor.fetchone()
+
+            if db_result and db_result["senha_db"] == input_password:
+                user_data = {
+                    "RA": db_result["RA"],
+                    "nome": db_result["nome"],
+                    "tipo": "student",
+                    "turma": db_result["turma"]
+                }
+        elif selected_user_type == "teacher":
+            sql_query = f"""
+                SELECT 
+                    p.{col_pr_ra} AS RA, p.{col_pr_nome} AS nome, 
+                    p.{col_pr_senha} AS senha_db, m.{col_mat_nome} AS materia 
+                FROM {tbl_prof} p
+                LEFT JOIN {tbl_materias} m ON p.{col_pr_fk_materia} = m.{col_mat_id_pk}
+                WHERE p.{col_pr_ra} = %s
+            """
+            cursor.execute(sql_query, (input_ra,))
+            db_result = cursor.fetchone()
+
+            if db_result and db_result["senha_db"] == input_password:
+                user_data = {
+                    "RA": db_result["RA"],
+                    "nome": db_result["nome"],
+                    "tipo": "teacher",
+                    "materia": db_result["materia"]
+                }
+        else:
+            print(f"Erro (verify_credentials): Tipo de usuário desconhecido '{selected_user_type}'")
+            return None 
+
+    except mysql.connector.Error as err:
+        print(f"Erro de banco de dados (verify_credentials): {err}")
+    except Exception as e:
+        print(f"Erro inesperado (verify_credentials): {e}")
+    finally:
+        if cursor: cursor.close()
+        if connection and connection.is_connected(): connection.close()
+            
+    return user_data

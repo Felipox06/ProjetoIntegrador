@@ -192,7 +192,7 @@ class UserListItem:
         surface.blit(name_surf, name_rect)
         
         # Tipo e informações específicas
-        if self.user_data['tipo'] == 'Aluno':
+        if self.user_data['tipo'] == 'student':
             info_text = f"Aluno - {self.user_data.get('serie', '')} {self.user_data.get('classe', '')}"
             type_color = COLORS.get("success", (75, 181, 67))
         else:
@@ -400,9 +400,9 @@ class EditUserScreen:
         if self.current_filter == "Todos":
             self.filtered_users = self.all_users.copy()
         elif self.current_filter == "Alunos":
-            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'Aluno']
+            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'student']
         elif self.current_filter == "Professores":
-            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'Professor']
+            self.filtered_users = [u for u in self.all_users if u['tipo'] == 'teacher']
         
         self.scroll_offset = 0
         self.selected_user = None
@@ -430,7 +430,7 @@ class EditUserScreen:
             button.is_active = False
         
         # Carregar dados específicos do tipo
-        if user['tipo'] == 'Aluno':
+        if user['tipo'] == 'student':
             self.selected_serie = user.get('serie')
             self.selected_classe = user.get('classe')
             
@@ -446,7 +446,7 @@ class EditUserScreen:
                 if classe == self.selected_classe:
                     self.classe_buttons[i].is_active = True
         
-        elif user['tipo'] == 'Professor':
+        elif user['tipo'] == 'teacher':
             self.selected_materia = user.get('materia')
             
             # Ativar botão correspondente
@@ -471,13 +471,13 @@ class EditUserScreen:
             return False, "Senha deve ter pelo menos 4 caracteres"
         
         # Validações específicas por tipo
-        if self.selected_user['tipo'] == 'Aluno':
+        if self.selected_user['tipo'] == 'student':
             if not self.selected_serie:
                 return False, "Selecione a serie do aluno"
             if not self.selected_classe:
                 return False, "Selecione a classe do aluno"
         
-        elif self.selected_user['tipo'] == 'Professor':
+        elif self.selected_user['tipo'] == 'teacher':
             if not self.selected_materia:
                 return False, "Selecione a materia do professor"
         
@@ -510,7 +510,7 @@ class EditUserScreen:
         
         # Campos específicos do tipo
         user_tipo = self.selected_user['tipo']
-        if user_tipo == 'Aluno':
+        if user_tipo == 'student':
             # Para alunos, a coluna no DB é 'turma', que é a combinação de série e classe
             if self.selected_serie and self.selected_classe: # Garante que ambos foram selecionados na UI
                 turma_completa = f"{self.selected_serie} {self.selected_classe}"
@@ -519,7 +519,7 @@ class EditUserScreen:
                 # self.show_ui_message("Erro", "Série e Classe são obrigatórias para Aluno.")
                 print("Erro: Série e Classe são obrigatórias para Aluno.")
                 return False, "Série e Classe são obrigatórias para Aluno."
-        elif user_tipo == 'Professor':
+        elif user_tipo == 'teacher':
             if self.selected_materia: # Garante que a matéria foi selecionada
                 fields_to_send_to_db["materia"] = self.selected_materia
             else:
@@ -644,7 +644,7 @@ class EditUserScreen:
                         self.senha_input.active = False
                     
                     # Botões específicos do tipo
-                    if self.selected_user['tipo'] == 'Aluno':
+                    if self.selected_user['tipo'] == 'student':
                         # Série
                         series = ["1 Ano", "2 Ano", "3 Ano"]
                         for i, button in enumerate(self.serie_buttons):
@@ -661,7 +661,7 @@ class EditUserScreen:
                                 for j, other_button in enumerate(self.classe_buttons):
                                     other_button.is_active = (j == i)
                     
-                    elif self.selected_user['tipo'] == 'Professor':
+                    elif self.selected_user['tipo'] == 'teacher':
                         # Matéria
                         for i, button in enumerate(self.materia_buttons):
                             if button.is_clicked(mouse_pos):
@@ -796,7 +796,7 @@ class EditUserScreen:
             self.senha_input.draw(self.screen)
             
             # Campos específicos do tipo
-            if self.selected_user['tipo'] == 'Aluno':
+            if self.selected_user['tipo'] == 'student':
                 serie_label = self.small_font.render("Serie:", True, (80, 80, 80))
                 self.screen.blit(serie_label, (100, 425))
                 
@@ -809,7 +809,7 @@ class EditUserScreen:
                 for button in self.classe_buttons:
                     button.draw(self.screen)
             
-            elif self.selected_user['tipo'] == 'Professor':
+            elif self.selected_user['tipo'] == 'teacher':
                 materia_label = self.small_font.render("Materia:", True, (80, 80, 80))
                 self.screen.blit(materia_label, (100, 425))
                 

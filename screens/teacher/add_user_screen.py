@@ -358,13 +358,13 @@ class AddUserScreen:
         if not self.selected_user_type:
             return False, "Selecione o tipo de usuário."
         
-        if self.selected_user_type == "Aluno":
+        if self.selected_user_type == "student":
             if not self.selected_serie:
                 return False, "Selecione a série do aluno."
             if not self.turma_input.text.strip(): # CORRIGIDO: verificar .text.strip()
                 return False, "Escreva a turma do aluno."
         
-        elif self.selected_user_type == "Professor":
+        elif self.selected_user_type == "teacher":
             # Encontrar a matéria selecionada
             self.selected_materia = None
             for i, btn in enumerate(self.materia_buttons):
@@ -392,13 +392,13 @@ class AddUserScreen:
             "tipo": self.selected_user_type
         }
 
-        if self.selected_user_type == "Aluno":
+        if self.selected_user_type == "student":
             if not self.selected_serie or not self.turma_input.text.strip():
                 return False, "Série e Turma devem ser preenchidos para Aluno."
             # Combina série e turma no campo "turma"
             user_data["turma"] = f"{self.selected_serie} {self.turma_input.text.strip().upper()}"
         
-        elif self.selected_user_type == "Professor":
+        elif self.selected_user_type == "teacher":
             if not self.selected_materia: # selected_materia é atualizado em validate_form ou handle_events
                 return False, "Matéria deve ser selecionada para Professor."
             user_data["materia"] = self.selected_materia
@@ -452,7 +452,7 @@ class AddUserScreen:
                 return {"action": "exit"}
             
             active_inputs = [self.ra_input, self.nome_input, self.senha_input]
-            if self.selected_user_type == "Aluno":
+            if self.selected_user_type == "student":
                 active_inputs.append(self.turma_input)
 
             if event.type == MOUSEBUTTONDOWN:
@@ -472,7 +472,7 @@ class AddUserScreen:
                             input_field.active = False
                     
                     if self.aluno_button.is_clicked(mouse_pos):
-                        self.selected_user_type = "Aluno"
+                        self.selected_user_type = "student"
                         self.aluno_button.is_active = True
                         self.professor_button.is_active = False
                         # Limpar seleção de matéria ao trocar para aluno
@@ -480,7 +480,7 @@ class AddUserScreen:
                         self.selected_materia = None 
                     
                     elif self.professor_button.is_clicked(mouse_pos):
-                        self.selected_user_type = "Professor"
+                        self.selected_user_type = "teacher"
                         self.professor_button.is_active = True
                         self.aluno_button.is_active = False
                         # Limpar seleção de série e turma ao trocar para professor
@@ -489,7 +489,7 @@ class AddUserScreen:
                         self.turma_input.text = ""
                         self.turma_input.active = False
 
-                    if self.selected_user_type == "Aluno":
+                    if self.selected_user_type == "student":
                         if hasattr(self, 'serie_buttons'): # Checa se serie_buttons existe
                             for i, button in enumerate(self.serie_buttons):
                                 if button.is_clicked(mouse_pos):
@@ -498,7 +498,7 @@ class AddUserScreen:
                                         other_button.is_active = (j == i)
                                     break # Sai do loop após encontrar o botão clicado
                     
-                    elif self.selected_user_type == "Professor":
+                    elif self.selected_user_type == "teacher":
                         for i, button in enumerate(self.materia_buttons):
                             if button.is_clicked(mouse_pos):
                                 self.selected_materia = SUBJECTS[i] # SUBJECTS é a lista original
@@ -539,7 +539,7 @@ class AddUserScreen:
                 if self.ra_input.active: current_active_input = self.ra_input
                 elif self.nome_input.active: current_active_input = self.nome_input
                 elif self.senha_input.active: current_active_input = self.senha_input
-                elif self.turma_input.active and self.selected_user_type == "Aluno": # ADICIONADO: turma_input
+                elif self.turma_input.active and self.selected_user_type == "student": # ADICIONADO: turma_input
                     current_active_input = self.turma_input
 
                 if current_active_input:
@@ -600,7 +600,7 @@ class AddUserScreen:
         # Campos específicos
         base_y_specific_fields = self.aluno_button.rect.bottom + 25
 
-        if self.selected_user_type == "Aluno":
+        if self.selected_user_type == "student":
             serie_label_y = base_y_specific_fields
             serie_label_text = self.small_font.render("Série:", True, COLORS["text"])
             # Centralizar o label "Série:" acima dos botões de série
@@ -617,7 +617,7 @@ class AddUserScreen:
             self.screen.blit(turma_label, (self.center_x - turma_label.get_width()//2, turma_label_y))
             self.turma_input.draw(self.screen) # <<< ADICIONADO O DESENHO DO TURMA_INPUT
         
-        elif self.selected_user_type == "Professor":
+        elif self.selected_user_type == "teacher":
             materia_label_y = base_y_specific_fields
             materia_label_text = self.small_font.render("Matéria que Leciona:", True, COLORS["text"])
             materia_label_x = self.center_x - materia_label_text.get_width() // 2

@@ -4,6 +4,8 @@
 import pygame
 import sys
 from pygame.locals import *
+from databse.data_manager import fetch_player_history_and_stats
+from databse.db_connector import getConnection
 
 # Importar config se existir
 try:
@@ -217,87 +219,13 @@ class GameHistoryScreen:
             (232, 77, 77),  # Vermelho para botão de voltar
             "VOLTAR", self.text_font
         )
-        
-    def load_history_data(self):
-        # Aqui seria carregado do banco de dados. 
-        # Para esta demonstração, usamos dados simulados.
-        self.student_stats = {
-            "money_total": 25000,
-            "games_played": 12,
-            "questions_answered": 180,
-            "correct_answers": 142
-        }
-        
-        # Histórico simulado de jogos
-        self.history_items = [
-            {
-                "date": "15/05/2025",
-                "subject": "Matemática", 
-                "grade": "2º Ano",
-                "score": 5000
-            },
-            {
-                "date": "10/05/2025",
-                "subject": "Física", 
-                "grade": "3º Ano",
-                "score": 3000
-            },
-            {
-                "date": "05/05/2025",
-                "subject": "Química", 
-                "grade": "2º Ano",
-                "score": 2000
-            },
-            {
-                "date": "01/05/2025",
-                "subject": "Biologia", 
-                "grade": "1º Ano",
-                "score": 1000
-            },
-            {
-                "date": "25/04/2025",
-                "subject": "História", 
-                "grade": "3º Ano",
-                "score": 10000
-            },
-            {
-                "date": "20/04/2025",
-                "subject": "Geografia", 
-                "grade": "2º Ano",
-                "score": 0
-            },
-            {
-                "date": "15/04/2025",
-                "subject": "Português", 
-                "grade": "1º Ano",
-                "score": 2000
-            },
-            {
-                "date": "10/04/2025",
-                "subject": "Matemática", 
-                "grade": "3º Ano",
-                "score": 1000
-            },
-            {
-                "date": "05/04/2025",
-                "subject": "Física", 
-                "grade": "2º Ano",
-                "score": 0
-            },
-            {
-                "date": "01/04/2025",
-                "subject": "Química", 
-                "grade": "1º Ano",
-                "score": 1000
-            },
-        ]
     
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-                
+            
             if event.type == MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 
@@ -309,14 +237,17 @@ class GameHistoryScreen:
                 # Verificar cliques nos botões de rolagem
                 if self.scroll_up_button.is_clicked(mouse_pos):
                     self.scroll_up_button.pressed = True
+                    # max(0, ...) impede que o offset fique negativo
                     self.scroll_offset = max(0, self.scroll_offset - 1)
                     
                 if self.scroll_down_button.is_clicked(mouse_pos):
                     self.scroll_down_button.pressed = True
+                    # Calcula o offset máximo para não rolar além do final da lista
                     max_offset = max(0, len(self.history_items) - self.max_items_visible)
                     self.scroll_offset = min(max_offset, self.scroll_offset + 1)
                 
                 # Verificar rolagem com roda do mouse na área do histórico
+                # (Assumindo que self.history_panel existe e tem um .rect)
                 if self.history_panel.rect.collidepoint(mouse_pos):
                     if event.button == 4:  # Rolar para cima
                         self.scroll_offset = max(0, self.scroll_offset - 1)
@@ -325,6 +256,71 @@ class GameHistoryScreen:
                         self.scroll_offset = min(max_offset, self.scroll_offset + 1)
         
         return {"action": "none"}
+        
+    def load_history_data(self):
+        """
+        Carrega as estatísticas gerais e o histórico de jogos recentes
+        do jogador logado a partir do banco de dados.
+        """
+        # Inicializar com valores padrão/vazios
+        self.student_stats = {
+            "money_total": 0,
+            "games_played": 0,
+        }
+        self.history_items = [] # Começa com a lista de histórico vazia
+
+        # 1. Obter o RA do jogador logado a partir de self.user_data
+        player_ra = self.user_data.get("RA")
+        if not player_ra:
+            print("ERRO (GameHistoryScreen): Não foi possível encontrar o RA do usuário logado.")
+            return # Interrompe o carregamento
+
+        print(f"GameHistoryScreen: Buscando histórico e estatísticas para o RA: {player_ra}")
+        
+        # 2. Chamar a função do data_manager para buscar todos os dados
+        all_data = None
+        try:
+            # Lembre-se de importar fetch_player_history_and_stats do seu data_manager.py
+            all_data = fetch_player_history_and_stats(
+                player_ra, 
+                getConnection, 
+                limit=5
+            )
+        except NameError as ne:
+            print(f"Erro de Configuração (GameHistoryScreen): Função não encontrada. Verifique os imports. {ne}")
+        except Exception as e:
+            print(f"Erro inesperado (GameHistoryScreen) ao carregar histórico: {e}")
+
+        # 3. Preencher os atributos da classe com os dados retornados
+        if all_data:
+            # Preenche os dados do resumo (Dinheiro Total, Jogos Realizados)
+            summary = all_data.get("summary_stats", {})
+            self.student_stats["money_total"] = summary.get('total_score', 0)
+            self.student_stats["games_played"] = summary.get('total_games', 0)
+            
+            # Preenche e formata a lista de histórico para exibição
+            recent_games_from_db = all_data.get("recent_games", [])
+            for game_log in recent_games_from_db:
+                # O dicionário 'game_log' tem as chaves: "date", "subject", "grade", "score"
+                # vindas da função fetch_player_history_and_stats
+                
+                # Formatar a data (que vem como objeto datetime do banco)
+                date_object = game_log.get("date")
+                formatted_date = date_object.strftime("%d/%m/%Y") if date_object else "Data Inválida"
+                
+                # Monta o dicionário no formato que sua UI espera
+                ui_item = {
+                    "date": formatted_date,
+                    "subject": game_log.get("subject", "N/A"),
+                    "grade": game_log.get("grade", "N/A"),
+                    "score": game_log.get("score", 0)
+                }
+                self.history_items.append(ui_item)
+            
+            print(f"GameHistoryScreen: Dados carregados. {self.student_stats['games_played']} jogos no total. Exibindo os {len(self.history_items)} mais recentes.")
+        else:
+            print("AVISO (GameHistoryScreen): Nenhum dado de histórico ou estatísticas encontrado para este jogador.")
+            # self.student_stats e self.history_items permanecerão com os valores padrão (0 e lista vazia)
     
     def update(self):
         # Redefinir estado dos botões
@@ -354,8 +350,6 @@ class GameHistoryScreen:
         stats_text = [
             f"Dinheiro Total: R$ {self.student_stats['money_total']:,}",
             f"Jogos Realizados: {self.student_stats['games_played']}",
-            f"Questões Respondidas: {self.student_stats['questions_answered']}",
-            f"Acertos: {self.student_stats['correct_answers']} ({self.student_stats['correct_answers']/self.student_stats['questions_answered']*100:.1f}%)"
         ]
         
         for i, text in enumerate(stats_text):

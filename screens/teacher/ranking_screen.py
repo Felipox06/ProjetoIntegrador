@@ -278,12 +278,12 @@ class RankingScreen:
             "VOLTAR", self.text_font
         )
         
-    def load_students(self, serie_filter=None): 
+    def load_students(self): 
         # Carrega os dados dos alunos para o ranking, utilizando a função do data_manager.
 
         try:
             # Chama a função importada, passando o método de obter conexão
-            students_list = search_ranking_data_from_db(getConnection, serie_filter=serie_filter)
+            students_list = search_ranking_data_from_db(getConnection, serie_filter=None)
             return students_list
         except NameError as ne:
             # Isso pode acontecer se fetch_ranking_data_from_db não for importada corretamente

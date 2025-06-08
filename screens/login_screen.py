@@ -2,6 +2,9 @@ import pygame
 import sys
 import os
 from pygame.locals import *
+from config import COLORS
+from databse.data_manager import verify_user_credentials_from_db
+from databse.db_connector import getConnection
 pygame.init()
 
 # importe do config:
@@ -153,6 +156,13 @@ class LoginScreen:
             print("Aviso: Fonte pixelada não encontrada. Usando fontes do sistema.")
             self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
             self.text_font = pygame.font.SysFont('Arial', 18)
+            self.error_font = pygame.font.SysFont('Arial', 16, italic=True)
+        
+        # Adicionar atributos para a mensagem de erro
+        self.error_message = ""
+        self.message_timer = 0
+        # Tornar o offset um atributo da classe para ser usado em draw()
+        self.vertical_offset = -50 
         
         # Criar elementos de UI (posicionados mais para cima)
         center_x = self.width // 2
@@ -207,70 +217,91 @@ class LoginScreen:
             "Professor", self.text_font,
             is_toggle=True, is_active=False
         )
+
+    def _attempt_login(self):
+        
+        # Pega os dados dos inputs, chama a verificação no banco e lida com o resultado.
+        
+        ra_digitado = self.username_input.text.strip()
+        senha_digitada = self.password_input.text
+        tipo_selecionado = self.user_type # "student" ou "teacher"
+
+        if not ra_digitado or not senha_digitada:
+            self.error_message = "RA e Senha são obrigatórios."
+            self.message_timer = 180
+            return {"action": "login_failed"}
+
+        try:
+            # Chama a função do data_manager
+            user_data = verify_user_credentials_from_db(ra_digitado, senha_digitada, tipo_selecionado, getConnection)
+        except Exception as e:
+            self.error_message = f"Erro de conexão: {e}"
+            self.message_timer = 180
+            return {"action": "login_failed"}
+
+        if user_data:
+            # LOGIN BEM-SUCEDIDO
+            self.running = False # Encerra o loop da tela de login
+            return {"action": "login_success", "user_data": user_data}
+        else:
+            # LOGIN FALHOU - Verifica se é para o outro tipo de usuário
+            outro_tipo = "teacher" if tipo_selecionado == "student" else "student"
+            user_data_outro_tipo = verify_user_credentials_from_db(ra_digitado, senha_digitada, outro_tipo, getConnection)
+            
+            if user_data_outro_tipo:
+                tipo_correto_display = "Professor" if outro_tipo == "teacher" else "Aluno"
+                self.error_message = f"Credenciais para {tipo_correto_display}? Selecione o tipo correto."
+                self.message_timer = 240
+            else:
+                self.error_message = "RA ou Senha inválidos."
+                self.message_timer = 180
+            
+            return {"action": "login_failed"}
     
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-                
+            
             if event.type == MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
-                
                 if self.username_input.is_clicked(mouse_pos):
-                    self.username_input.active = True
-                    self.password_input.active = False
-                
+                    self.username_input.active = True; self.password_input.active = False
                 elif self.password_input.is_clicked(mouse_pos):
-                    self.username_input.active = False
-                    self.password_input.active = True
-                
-                elif self.login_button.is_clicked(mouse_pos):
-                    self.login_button.pressed = True
-                    username = self.username_input.text
-                    password = self.password_input.text
-                    self.running = False
-                    return {"action": "login_success", "user_type": self.user_type, "username": username}
-                
+                    self.username_input.active = False; self.password_input.active = True
                 elif self.student_button.is_clicked(mouse_pos):
-                    self.student_button.is_active = True
-                    self.teacher_button.is_active = False
+                    self.student_button.is_active = True; self.teacher_button.is_active = False
                     self.user_type = "student"
-                
                 elif self.teacher_button.is_clicked(mouse_pos):
-                    self.student_button.is_active = False
-                    self.teacher_button.is_active = True
+                    self.student_button.is_active = False; self.teacher_button.is_active = True
                     self.user_type = "teacher"
-                
+                elif self.login_button.is_clicked(mouse_pos): # Botão de Login
+                    self.login_button.pressed = True
+                    return self._attempt_login() # Chama a lógica de login
                 else:
-                    self.username_input.active = False
-                    self.password_input.active = False
+                    self.username_input.active = False; self.password_input.active = False
             
             if event.type == KEYDOWN:
+                if event.key == K_RETURN: # Tecla Enter
+                    return self._attempt_login() # Chama a lógica de login
+                
+                # Input de texto (seu código original)
                 if self.username_input.active:
-                    if event.key == K_BACKSPACE:
-                        self.username_input.text = self.username_input.text[:-1]
-                    else:
-                        self.username_input.text += event.unicode
-                
+                    if event.key == K_BACKSPACE: self.username_input.text = self.username_input.text[:-1]
+                    else: self.username_input.text += event.unicode
                 elif self.password_input.active:
-                    if event.key == K_BACKSPACE:
-                        self.password_input.text = self.password_input.text[:-1]
-                    else:
-                        self.password_input.text += event.unicode
-                
-                if event.key == K_RETURN:
-                    self.login_button.pressed = True
-                    username = self.username_input.text
-                    password = self.password_input.text
-                    self.running = False
-                    return {"action": "login_success", "user_type": self.user_type, "username": username}
+                    if event.key == K_BACKSPACE: self.password_input.text = self.password_input.text[:-1]
+                    else: self.password_input.text += event.unicode
         
         return {"action": "none"}
     
     def update(self):
         if self.login_button.pressed:
             self.login_button.pressed = False
+        # Decrementar o timer da mensagem de erro
+        if self.message_timer > 0:
+            self.message_timer -= 1
 
     def draw(self):
         self.screen.fill(self.bg_color)
@@ -298,6 +329,13 @@ class LoginScreen:
         self.login_button.draw(self.screen)
         self.student_button.draw(self.screen)
         self.teacher_button.draw(self.screen)
+
+        if self.message_timer > 0:
+            error_color = config.COLORS.get("error", (232, 77, 77)) 
+            error_surf = self.error_font.render(self.error_message, True, error_color)
+            # Posicionar a mensagem de erro (ex: acima do botão de entrar)
+            error_rect = error_surf.get_rect(center=(self.width // 2, 395 + self.vertical_offset))
+            self.screen.blit(error_surf, error_rect)
     
     def run(self):
         clock = pygame.time.Clock()
