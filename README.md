@@ -24,8 +24,6 @@
 
 ![Tela de menu PoliMaster](![image](https://github.com/user-attachments/assets/287f0e65-f467-41ff-9a3a-3b6610c4499f))
 
-![Tela de Alunos](https://lh3.googleusercontent.com/pw/AP1GczP2u7ORul934ERF4lWhCouWQxV7aQcYMnQ8a_nHgwNeapEsBdGddwhTfZ2DUJjlz3JzsfuJVwhdfUAXp8gL5bpPMHk_Ep9rVDjX3Qnt4LGZexeuUm0dEs7Da5_8qOe6oZb6-WBXkiuQgfBIGpaiLn-6=w736-h414-s-no-gm?authuser=0)
-
 ![Tela de Configurar Jogo (PoliGamer e PoliMaster)](![image](https://github.com/user-attachments/assets/168bf452-7ee0-4a54-8b00-f3f8c69790ec))
 
 ![Tela de Jogo (PoliGamer e PoliMaster)](![image](https://github.com/user-attachments/assets/171c0ae7-e909-4425-b200-611cc091f025))
