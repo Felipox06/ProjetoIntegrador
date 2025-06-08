@@ -13,7 +13,7 @@
 
 ## Documentação do Projeto Integrador
 
-[PoliGame Show Documentation](PoliGame Show (PI 1º Semestre)/Documentação/Documentação Final PoliGame Show.pdf)
+[PoliGame Show Documentation](file:///C:/Users/Sarah%20Sperduti/OneDrive%20-%20Instituto%20Mau%C3%A1%20de%20Tecnologia/PoliGame%20Show%20(PI%201%C2%BA%20Semestre)/Documenta%C3%A7%C3%A3o/Documenta%C3%A7%C3%A3o%20Final%20PoliGame%20Show.pdf)
 
 
 ## Screenshots
