@@ -21,7 +21,6 @@ DEFAULT_DIFFICULTY_LEVELS = ["Automatico", "Facil", "Medio", "Dificil"]
 try:
     import config
     COLORS = config.COLORS
-    # Tentar obter SUBJECTS e GRADE_LEVELS, ou usar valores padrão
     try:
         SUBJECTS = config.SUBJECTS
     except (AttributeError, UnicodeDecodeError):
@@ -47,7 +46,9 @@ except ImportError:
         "light_shadow": (255, 255, 255),
         "dark_shadow": (205, 205, 210),
         "accent": (106, 130, 251),
-        "text": (60, 60, 60)
+        "warning": (251, 164, 31),
+        "text": (0, 0, 0),
+        "progress": (238, 32, 81),
     }
     SUBJECTS = DEFAULT_SUBJECTS
     GRADE_LEVELS = DEFAULT_GRADE_LEVELS
@@ -60,18 +61,14 @@ class NeumorphicPanel:
         self.light_shadow = light_shadow
         self.dark_shadow = dark_shadow
         self.border_radius = border_radius
+        self.warning_color = COLORS["warning"]
+        self.accent_color = COLORS ["accent"]
    
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
-        pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-       
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-       
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+        pygame.draw.rect(surface, self.accent_color, self.rect, border_radius=self.border_radius)
+        pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=self.border_radius, width=1)
+
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow,
@@ -114,14 +111,8 @@ class NeumorphicButton:
         else:
             # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-           
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-           
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
-           
+            pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=10, width=1)
+
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
 
@@ -132,11 +123,12 @@ class GameConfigScreen:
         self.width, self.height = screen.get_size()
         self.user_data = user_data  # Contém user_type (student/teacher) e username
        
-        # Cores do design neumorfista
+        # Cores 
         self.bg_color = COLORS["background"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
+        self.warning_color = COLORS ["warning"]
        
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
@@ -146,16 +138,16 @@ class GameConfigScreen:
         # Configurações selecionadas
         self.selected_subject = None
         self.selected_grade = None
-        self.selected_difficulty = "Automatico"  # Padrão é automático
+        self.selected_difficulty = "Automatico"  
        
         # Criar elementos de UI
         center_x = self.width // 2
        
-        # Painel principal (aumentado para acomodar a nova seção)
+        # Painel principal 
         self.main_panel = NeumorphicPanel(
             center_x - 350, 30,
             700, 540,
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.accent_color, self.light_shadow, self.dark_shadow
         )
        
         # Criar botões para matérias
@@ -167,20 +159,20 @@ class GameConfigScreen:
         # Criar botões para dificuldade
         self.difficulty_buttons = self.create_difficulty_buttons()
        
-        # Botões de navegação (movidos mais para baixo)
+        # Botões de navegação 
         self.start_button = NeumorphicButton(
             center_x + 50, 500,
             200, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            (75, 181, 67),  # Verde
+            self.warning_color, self.light_shadow, self.dark_shadow,
+            (75, 181, 67),  
             "INICIAR", self.subtitle_font
         )
        
         self.back_button = NeumorphicButton(
             center_x - 250, 500,
             200, 50,
-            self.bg_color, self.light_shadow, self.dark_shadow,
-            (232, 77, 77),  # Vermelho
+            self.warning_color, self.light_shadow, self.dark_shadow,
+            (232, 77, 77),  
             "VOLTAR", self.subtitle_font
         )
        
@@ -188,13 +180,13 @@ class GameConfigScreen:
         buttons = []
         center_x = self.width // 2
        
-        # Botões para matérias (layout em grade 4x2) - posição ajustada
+        # Botões para matérias 
         button_width = 150
         button_height = 50
         margin_x = 20
         margin_y = 15
         start_x = center_x - (button_width * 2 + margin_x/2)
-        start_y = 160  # Movido um pouco para baixo
+        start_y = 160  
        
         for i, subject in enumerate(SUBJECTS):
             row = i // 4
@@ -217,12 +209,12 @@ class GameConfigScreen:
         buttons = []
         center_x = self.width // 2
        
-        # Botões para séries (layout horizontal) - posição ajustada
+        # Botões para séries 
         button_width = 150
         button_height = 50
         margin_x = 20
         start_x = center_x - (button_width * 1.5 + margin_x)
-        start_y = 310  # Movido para baixo
+        start_y = 310  
        
         for i, grade in enumerate(GRADE_LEVELS):
             x = start_x + i * (button_width + margin_x)
@@ -241,13 +233,13 @@ class GameConfigScreen:
         buttons = []
         center_x = self.width // 2
        
-        # Botões para dificuldade (layout horizontal)
+        # Botões para dificuldade 
         button_width = 140
         button_height = 50
         margin_x = 15
         total_width = button_width * 4 + margin_x * 3
-        start_x = center_x - total_width // 2
-        start_y = 410  # Nova seção
+        start_x = center_x - total_width // 2 + 20
+        start_y = 410  
        
         # Cores diferentes para cada nível de dificuldade
         difficulty_colors = {
@@ -260,7 +252,7 @@ class GameConfigScreen:
         for i, difficulty in enumerate(DIFFICULTY_LEVELS):
             x = start_x + i * (button_width + margin_x)
            
-            # Definir se o botão está ativo (Automático é o padrão)
+            # Definir se o botão está ativo (aut. é padrao)
             is_active = (difficulty == "Automatico")
            
             buttons.append(NeumorphicButton(
@@ -286,11 +278,10 @@ class GameConfigScreen:
 
         # 2. Validação básica
         if not all([subject_name, grade_name, difficulty_name]):
-            # Defina uma mensagem de erro para a UI aqui, se tiver esse mecanismo
             # Ex: self.error_message = "Selecione Matéria, Série e Dificuldade!"
             # self.message_timer = 180 
             print("ERRO (GameConfigScreen): Opções não selecionadas.")
-            return None # Indica que não deve prosseguir
+            return None 
 
         # 3. Busque os IDs correspondentes no banco de dados
         try:
@@ -420,7 +411,7 @@ class GameConfigScreen:
    
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
        
         # Desenha o painel principal
         self.main_panel.draw(self.screen)
@@ -441,7 +432,7 @@ class GameConfigScreen:
        
         # Desenha subtítulo para séries
         grade_text = self.subtitle_font.render("Selecione a Serie:", True, (60, 60, 60))
-        grade_rect = grade_text.get_rect(center=(self.width // 2, 280))
+        grade_rect = grade_text.get_rect(center=(self.width // 2, 300))
         self.screen.blit(grade_text, grade_rect)
        
         # Desenha botões de série

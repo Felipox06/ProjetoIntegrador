@@ -14,13 +14,17 @@ except ImportError:
     class Config:
         def __init__(self):
             self.COLORS = {
-               "background": (30, 180, 195),     
-                "light_shadow": (255, 255, 255), 
-                "dark_shadow": (20, 140, 150),    
-                "accent": (27, 185, 185),    
-                "text": (0, 0, 0),
+                 "background": (235, 235, 240),
+                "light_shadow": (255, 255, 255),
+                "dark_shadow": (205, 205, 210),
+                "accent": (27, 185, 185),
+                "text": (60, 60, 60),
+                "success": (75, 181, 67),
                 "warning": (251, 164, 31),
-                "black": (0, 0, 0)}       
+                "error": (232, 77, 77),
+                "black": (0, 0, 0),
+                "progress": (238, 32, 81),
+                        }
             try:
                 # Caminho absoluto ou relativo determinado pelo seu projeto
                 font_path = os.path.join("assets", "fonts", "pixel_font.ttf")
@@ -146,6 +150,7 @@ class LoginScreen:
         # Cores
         self.bg_color = config.COLORS["background"]
         self.accent_color = config.COLORS["accent"]
+        self.warning_color = config.COLORS["warning"]
         
         # Tentar carregar fontes personalizadas
         try:
@@ -172,7 +177,7 @@ class LoginScreen:
         self.main_panel = SimplePanel(
             center_x - 200, 100 + vertical_offset, 
             400, 450, 
-            self.bg_color
+            config.COLORS["accent"]
         )
         
         # Campos de entrada
@@ -195,7 +200,7 @@ class LoginScreen:
         self.login_button = SimpleButton(
             center_x - 150, 380 + vertical_offset,
             300, 50,
-            self.bg_color, self.accent_color, 
+            self.bg_color, self.warning_color, 
             "ENTRAR", self.text_font
         )
         
@@ -205,7 +210,7 @@ class LoginScreen:
         self.student_button = SimpleButton(
             center_x - 150, 450 + vertical_offset,
             140, 40,
-            self.bg_color, self.accent_color,
+            self.bg_color, self.warning_color,
             "Aluno", self.text_font,
             is_toggle=True, is_active=True
         )
@@ -213,7 +218,7 @@ class LoginScreen:
         self.teacher_button = SimpleButton(
             center_x + 10, 450 + vertical_offset,
             140, 40,
-            self.bg_color, self.accent_color,
+            self.bg_color, self.warning_color,
             "Professor", self.text_font,
             is_toggle=True, is_active=False
         )
@@ -299,23 +304,13 @@ class LoginScreen:
     def update(self):
         if self.login_button.pressed:
             self.login_button.pressed = False
-        # Decrementar o timer da mensagem de erro
         if self.message_timer > 0:
             self.message_timer -= 1
 
     def draw(self):
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
 
-        # Caixa amarela (accent) atrás do painel principal para destaque
-        accent_rect = pygame.Rect(
-            self.main_panel.rect.x - 10, 
-            self.main_panel.rect.y - 10, 
-            self.main_panel.rect.width + 20, 
-            self.main_panel.rect.height + 20
-        )
-        pygame.draw.rect(self.screen, self.accent_color, accent_rect, border_radius=25)
-        
-        # Painel principal (sobre a caixa amarela)
+        # Painel principal (com os elemento - tp formulario)
         self.main_panel.draw(self.screen)
         
         # titulo:

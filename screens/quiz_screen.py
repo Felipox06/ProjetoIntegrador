@@ -41,15 +41,8 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-       
-        # Desenhar sombra clara (superior esquerda)
-        shadow_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_light, border_radius=self.border_radius, width=3)
-       
-        # Desenhar sombra escura (inferior direita)
-        shadow_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_dark, border_radius=self.border_radius, width=3)
-       
+        pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=self.border_radius, width=1)
+
         # Borda preta para definição
         pygame.draw.rect(surface, COLORS["black"], self.rect, border_radius=self.border_radius, width=2)
 
@@ -67,7 +60,7 @@ class NeumorphicButton:
         self.is_active = is_active
         self.is_circular = is_circular
         self.pressed = False
-        self.correct = None  # Para indicar se a resposta está correta (True) ou incorreta (False)
+        self.correct = None  
        
         # Preparar superfície de texto
         self.text_surf = font.render(text, True, (50, 50, 50))
@@ -75,7 +68,7 @@ class NeumorphicButton:
    
     def is_clicked(self, pos):
         if self.is_circular:
-            # Para botões circulares, verificar distância do centro
+            # Para botões circulares
             center_x, center_y = self.rect.center
             radius = self.rect.width // 2
             distance = ((pos[0] - center_x) ** 2 + (pos[1] - center_y) ** 2) ** 0.5
@@ -264,14 +257,18 @@ class QuizScreen:
         self.screen = screen
         self.running = True
         self.width, self.height = screen.get_size()
-        self.user_data = user_data  # Contém user_type (student/teacher) e username
-        self.game_config = game_config  # Contém subject, grade e difficulty
+        self.user_data = user_data  
+        self.game_config = game_config  
        
-        # Cores do design neumorfista
-        self.bg_color = COLORS["background"]
-        self.light_shadow = COLORS["light_shadow"]
-        self.dark_shadow = COLORS["dark_shadow"]
-        self.accent_color = COLORS["accent"]
+        # Cores 
+        self.bg_color = COLORS.get("background", (240, 240, 240))
+        self.light_shadow = COLORS.get("light_shadow", (255, 255, 255))
+        self.dark_shadow = COLORS.get("dark_shadow", (200, 200, 200))
+        self.accent_color = COLORS.get("accent", (251, 164, 31))
+        self.warning_color = COLORS.get("warning", (232, 181, 12))
+        self.error_color = COLORS.get("error", (232, 77, 77))
+        self.progress_color = COLORS.get("progress", (238, 32, 81))
+
        
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 28, bold=True)
@@ -351,8 +348,8 @@ class QuizScreen:
        
     def setup_ui(self):
         # Layout em dois painéis
-        left_panel_width = int(self.width * 0.75) - 30  # 75% da largura
-        right_panel_width = self.width - left_panel_width - 40  # 25% da largura
+        left_panel_width = int(self.width * 0.75) - 30  
+        right_panel_width = self.width - left_panel_width - 40 
        
         # Painel esquerdo (questões e controles principais)
         self.left_panel = NeumorphicPanel(
@@ -373,17 +370,17 @@ class QuizScreen:
             self.light_shadow,
             self.dark_shadow
         )
-       
-        # Barra de progresso (no topo do painel esquerdo)
+
         self.progress_bar = ProgressBar(
-            40, 30,
-            left_panel_width - 40, 20,
-            (220, 220, 220),  # Cor de fundo
-            COLORS["progress"],  # Cor da barra (vermelho)
-            (150, 150, 150),  # Cor da borda
-            TOTAL_QUESTIONS
-        )
-       
+        40, 30,
+        left_panel_width - 40, 20,
+        COLORS.get("background", (220, 220, 220)),  # Cor de fundo da barra
+        COLORS.get("progress", (238, 32, 81)),      # Cor de progresso (vermelho)
+        COLORS.get("black", (0, 0, 0)),             # Cor da borda
+        TOTAL_QUESTIONS
+)
+
+
         # Painel da pergunta (dentro do painel esquerdo)
         self.question_panel = NeumorphicPanel(
             40, 70,
@@ -399,7 +396,7 @@ class QuizScreen:
             self.width // 2 - 200,
             self.height // 2 - 100,
             400, 200,
-            self.bg_color,
+            self.warning_color,
             self.light_shadow,
             self.dark_shadow,
             border_radius=15
@@ -410,7 +407,7 @@ class QuizScreen:
             self.width // 2 - 20,
             self.height // 2 + 60,
             40, 40,
-            self.bg_color,
+            self.warning_color,
             self.light_shadow,
             self.dark_shadow,
             COLORS["error"],
