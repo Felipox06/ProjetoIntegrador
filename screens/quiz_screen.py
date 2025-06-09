@@ -259,6 +259,8 @@ class QuizScreen:
         self.width, self.height = screen.get_size()
         self.user_data = user_data  
         self.game_config = game_config  
+        self.show_confirmation_modal = False
+
        
         # Cores 
         self.bg_color = COLORS.get("background", (240, 240, 240))
@@ -517,6 +519,22 @@ class QuizScreen:
        
         # Atualizar textos dos botões de opções
         self.update_question_display()
+
+        self.confirm_yes_button = NeumorphicButton(
+        self.width // 2 - 80, self.height // 2 + 40,
+        100, 40,
+        self.warning_color, self.light_shadow, self.dark_shadow,
+        self.accent_color,
+        "Sim", self.option_font
+)
+
+        self.confirm_no_button = NeumorphicButton(
+        self.width // 2 + 20, self.height // 2 + 40,
+        100, 40,
+        self.warning_color, self.light_shadow, self.dark_shadow,
+        COLORS["error"],
+        "Não", self.option_font
+)
        
     def update_question_display(self):
         """
@@ -648,12 +666,21 @@ class QuizScreen:
                 # Verificar clique no botão confirmar (processar resposta)
                 if self.confirm_button.is_clicked(mouse_pos) and not self.waiting_for_next:
                     self.confirm_button.pressed = True
-                   
                     if self.selected_option is not None and not self.show_result:
-                        # Se tem opção selecionada e ainda não processou, confirma e processa
+                        self.show_confirmation_modal = True
+
+                # Verificar cliques nos botões do modal de confirmação
+                if self.show_confirmation_modal:
+                    if self.confirm_yes_button.is_clicked(mouse_pos):
                         self.confirmed_option = self.selected_option
                         self.check_answer()
                         self.show_result = True
+                        self.show_confirmation_modal = False
+                        return {"action": "none"}
+                    elif self.confirm_no_button.is_clicked(mouse_pos):
+                        self.show_confirmation_modal = False
+                        return {"action": "none"}
+
        
         return {"action": "none"}
     
@@ -776,7 +803,7 @@ class QuizScreen:
    
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
        
         # Desenha os painéis principais
         self.left_panel.draw(self.screen)
@@ -899,7 +926,7 @@ class QuizScreen:
                     self.confirm_button.draw(self.screen)
                    
                     # Mostrar instrução
-                    instruction_text = "Clique em ✓ para confirmar sua resposta"
+                    instruction_text = "Clique para confirmar sua resposta"
                     instruction_surf = self.small_font.render(instruction_text, True, (100, 100, 100))
                     instruction_rect = instruction_surf.get_rect(center=(self.left_panel.rect.width // 2 + 20, self.height - 120))
                     self.screen.blit(instruction_surf, instruction_rect)
@@ -939,6 +966,29 @@ class QuizScreen:
                
                 # Desenhar botão de fechar
                 self.close_hint_button.draw(self.screen)
+
+            # Modal de confirmação de resposta
+            if self.show_confirmation_modal:
+             # Fundo escuro semi-transparente
+                overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 150))
+                self.screen.blit(overlay, (0, 0))
+
+            # Caixa central
+                modal_rect = pygame.Rect(self.width // 2 - 200, self.height // 2 - 100, 400, 180)
+                pygame.draw.rect(self.screen, self.accent_color, modal_rect, border_radius=15)
+                pygame.draw.rect(self.screen, COLORS["black"], modal_rect, 2, border_radius=15)
+
+            # Texto da confirmação
+                text = "Tem certeza da sua resposta?"
+                text_surf = self.title_font.render(text, True, COLORS["black"])
+                text_rect = text_surf.get_rect(center=(self.width // 2, self.height // 2 - 30))
+                self.screen.blit(text_surf, text_rect)
+
+            # Botões Sim e Não
+                self.confirm_yes_button.draw(self.screen)
+                self.confirm_no_button.draw(self.screen)
+
        
         # Atualiza a tela
         pygame.display.flip()
@@ -957,16 +1007,12 @@ class QuizScreen:
             if test_width <= max_width:
                 current_line.append(word)
             else:
-                # Se a linha atual não estiver vazia, adiciona à lista de linhas
                 if current_line:
                     lines.append(' '.join(current_line))
                     current_line = [word]
                 else:
-                    # Se a palavra for maior que a largura máxima, adiciona assim mesmo
                     lines.append(word)
                     current_line = []
-       
-        # Adiciona a última linha
         if current_line:
             lines.append(' '.join(current_line))
            
@@ -980,8 +1026,6 @@ class QuizScreen:
             self.update()
             self.draw()
             pygame.time.Clock().tick(60)
-       
-        # Retorno no caso de sair do loop por outros meios
         return {"action": "exit"}
 
 # TODO: Integração com Banco de Dados

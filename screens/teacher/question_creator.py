@@ -109,7 +109,6 @@ class NeumorphicButton:
             text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
             surface.blit(self.text_surf, text_rect)
         else:
-            # Estado normal: efeito neumórfico
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
 
             # Desenhar contorno preto fino
@@ -271,6 +270,7 @@ class QuestionEditor:
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
+        self.warning_color = COLORS["warning"]
         self.success_color = COLORS.get("success", (75, 181, 67))  # Verde para alternativa correta
         
         # Usar fonte padrão do sistema
@@ -296,16 +296,16 @@ class QuestionEditor:
     def setup_ui(self):
         center_x = self.width // 2
         
-        # Painel principal (ajustado para garantir que caiba na tela)
+        # Painel principal 
         self.main_panel = NeumorphicPanel(
             20, 20, 
             self.width - 40, self.height - 40, 
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.accent_color, self.light_shadow, self.dark_shadow
         )
         
         # Redimensionar e reposicionar os painéis para evitar sobreposição
-        left_panel_width = self.width * 0.3  # 30% da largura da tela
-        right_panel_width = self.width * 0.65  # 65% da largura da tela
+        left_panel_width = self.width * 0.3  
+        right_panel_width = self.width * 0.65  
         
         # Painéis de configuração (lado esquerdo - mais estreito)
         self.config_panel = NeumorphicPanel(
@@ -323,7 +323,7 @@ class QuestionEditor:
         
         # Botões para matérias (layout em duas colunas)
         self.subject_buttons = []
-        btn_width = (left_panel_width - 60) / 2  # Dividir em duas colunas
+        btn_width = (left_panel_width - 60) / 2  
         btn_height = 40
         btn_spacing = 10
         
@@ -361,7 +361,7 @@ class QuestionEditor:
             button = NeumorphicButton(
                 btn_x, grade_y,
                 grade_btn_width, btn_height,
-                self.bg_color, self.light_shadow, self.dark_shadow,
+                self.warning_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, grade, self.text_font,
                 is_toggle=True, is_active=False
             )
@@ -435,7 +435,7 @@ class QuestionEditor:
             multiline=True, max_length=300
         )
         
-        # Botões para salvar e cancelar - bem posicionados no fundo da tela
+        # Botões para salvar e cancelar
         button_width = 150
         button_height = 50
         button_y = self.height - 80
@@ -444,7 +444,7 @@ class QuestionEditor:
         self.cancel_button = NeumorphicButton(
             center_x - button_width - 20, button_y - -25,
             button_width, button_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             COLORS.get("error", (232, 77, 77)), "CANCELAR", self.subtitle_font
         )
         
@@ -452,7 +452,7 @@ class QuestionEditor:
         self.save_button = NeumorphicButton(
             center_x + 20, button_y - -25,
             button_width, button_height,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             self.success_color, "SALVAR", self.subtitle_font
         )
         
@@ -540,15 +540,15 @@ class QuestionEditor:
 
         # Processar o resultado da operação no banco de dados
         if sucesso_db:
-            self.success_message = mensagem_db # Usa a mensagem retornada pela função do DB
-            self.message_timer = 120  # 2 segundos a 60 FPS
-            self.clear_form() # Limpa o formulário apenas em caso de sucesso
-            print(f"Sucesso no DB: {mensagem_db}") # Log para o console
+            self.success_message = mensagem_db 
+            self.message_timer = 120  
+            self.clear_form() 
+            print(f"Sucesso no DB: {mensagem_db}") 
             return True
         else:
-            self.error_message = mensagem_db # Usa a mensagem de erro retornada
-            self.message_timer = 180  # 3 segundos a 60 FPS
-            print(f"Erro no DB: {mensagem_db}") # Log para o console
+            self.error_message = mensagem_db
+            self.message_timer = 180  
+            print(f"Erro no DB: {mensagem_db}") 
             return False
           
     
@@ -743,7 +743,7 @@ class QuestionEditor:
     
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
         
         # Desenha os painéis principais
         self.main_panel.draw(self.screen)

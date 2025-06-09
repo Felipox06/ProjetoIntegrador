@@ -29,7 +29,6 @@ class NeumorphicPanel:
         self.dark_shadow = dark_shadow
         self.border_radius = border_radius
 
-        self.bg_color = COLORS["background"]
         self.warning_color = COLORS["warning"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
