@@ -413,7 +413,7 @@ class QuestionRemoveScreen:
         
         # Botão para remover a questão selecionada
         self.remove_button = NeumorphicButton(
-            center_x - 100, 520,
+            center_x - -150, 520,
             200, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             COLORS.get("error", (232, 77, 77)), "REMOVER QUESTÃO", self.text_font
@@ -421,7 +421,7 @@ class QuestionRemoveScreen:
         
         # Botão para voltar ao menu
         self.back_button = NeumorphicButton(
-            center_x - 320, 520,
+            center_x - 360, 520,
             180, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (100, 100, 100),  # Cinza para botão de voltar

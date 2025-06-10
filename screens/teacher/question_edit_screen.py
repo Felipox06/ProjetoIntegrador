@@ -383,10 +383,10 @@ class QuestionEditScreen:
         
         for i in range(first_row_count):
             x = start_x_first_row + i * (button_width + button_spacing)
-            y = 85
+            y = 95
             
             button = NeumorphicButton(
-                x, y,
+                x - 100, y,
                 button_width, 25,
                 self.bg_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, self.subjects[i], self.small_font,
@@ -401,10 +401,10 @@ class QuestionEditScreen:
         
         for i in range(second_row_count):
             x = start_x_second_row + i * (button_width + button_spacing)
-            y = 120  # Segunda linha
+            y = 130  # Segunda linha
             
             button = NeumorphicButton(
-                x, y,
+                x - 100, y,
                 button_width, 25,
                 self.bg_color, self.light_shadow, self.dark_shadow,
                 self.accent_color, self.subjects[i + first_row_count], self.small_font,
@@ -452,7 +452,7 @@ class QuestionEditScreen:
         
         # Botão para editar a questão selecionada
         self.edit_button = NeumorphicButton(
-            self.center_x - 75, 530,
+            self.center_x - -150, 530,
             150, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "EDITAR", self.text_font
@@ -460,7 +460,7 @@ class QuestionEditScreen:
         
         # Botão para voltar ao menu
         self.back_button = NeumorphicButton(
-            self.center_x - 250, 530,
+            self.center_x - 360, 530,
             150, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de voltar
@@ -469,7 +469,7 @@ class QuestionEditScreen:
         
         # Botão para salvar alterações (inicialmente oculto)
         self.save_button = NeumorphicButton(
-            self.center_x + 100, 530,
+            self.center_x - -150, 530,
             150, 40,
             self.bg_color, self.light_shadow, self.dark_shadow,
             COLORS.get("success", (75, 181, 67)),  # Verde para salvar
@@ -523,7 +523,7 @@ class QuestionEditScreen:
         
         # Botão para editar opções
         self.edit_options_button = NeumorphicButton(
-            self.center_x - 100, self.hint_input.rect.y + 40,
+            self.center_x - 100, self.hint_input.rect.y + 60,
             200, 30,
             self.bg_color, self.light_shadow, self.dark_shadow,
             self.accent_color, "EDITAR OPÇÕES", self.small_font
