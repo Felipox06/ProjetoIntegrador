@@ -1,5 +1,3 @@
-# screens/student/game_history.py
-# -*- coding: utf-8 -*-
 
 import pygame
 import sys
@@ -36,14 +34,7 @@ class NeumorphicPanel:
     def draw(self, surface):
         # Desenhar retângulo principal com bordas arredondadas
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=self.border_radius)
-        
-        # Desenhar sombra clara (superior esquerda)
-        shadow_rect_light = pygame.Rect(self.rect.x-3, self.rect.y-3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=self.border_radius, width=3)
-        
-        # Desenhar sombra escura (inferior direita)
-        shadow_rect_dark = pygame.Rect(self.rect.x+3, self.rect.y+3, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=self.border_radius, width=3)
+        pygame.draw.rect(surface, config.COLORS["black"], self.rect, border_radius=self.border_radius, width=1)
 
 class NeumorphicButton:
     def __init__(self, x, y, width, height, bg_color, light_shadow, dark_shadow, 
@@ -84,15 +75,8 @@ class NeumorphicButton:
             text_rect = self.text_surf.get_rect(center=(self.rect.centerx+1, self.rect.centery+1))
             surface.blit(self.text_surf, text_rect)
         else:
-            # Estado normal: efeito neumórfico
+            # Estado normal: 
             pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
-            
-            # Desenhar sombras
-            shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-            
-            shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-            pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
             
             # Desenhar texto
             surface.blit(self.text_surf, self.text_rect)
@@ -115,12 +99,6 @@ class HistoryItem:
         # Fundo do item
         pygame.draw.rect(surface, self.bg_color, self.rect, border_radius=10)
         
-        # Sombras neumórficas
-        shadow_rect_light = pygame.Rect(self.rect.x-2, self.rect.y-2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.light_shadow, shadow_rect_light, border_radius=10, width=2)
-        
-        shadow_rect_dark = pygame.Rect(self.rect.x+2, self.rect.y+2, self.rect.width, self.rect.height)
-        pygame.draw.rect(surface, self.dark_shadow, shadow_rect_dark, border_radius=10, width=2)
         
         # Desenhar textos
         margin = 20
@@ -146,13 +124,14 @@ class GameHistoryScreen:
         self.screen = screen
         self.running = True
         self.width, self.height = screen.get_size()
-        self.user_data = user_data  # Contém user_type (student) e username
+        self.user_data = user_data  
         
         # Cores do design neumorfista
         self.bg_color = COLORS["background"]
         self.light_shadow = COLORS["light_shadow"]
         self.dark_shadow = COLORS["dark_shadow"]
         self.accent_color = COLORS["accent"]
+        self.warning_color = COLORS ["warning"]
         
         # Usar fonte padrão do sistema
         self.title_font = pygame.font.SysFont('Arial', 36, bold=True)
@@ -177,7 +156,7 @@ class GameHistoryScreen:
         self.main_panel = NeumorphicPanel(
             center_x - 350, 50, 
             700, 500, 
-            self.bg_color, self.light_shadow, self.dark_shadow
+            self.accent_color, self.light_shadow, self.dark_shadow
         )
         
         # Painel de estatísticas
@@ -215,7 +194,7 @@ class GameHistoryScreen:
         self.back_button = NeumorphicButton(
             center_x - 75, 490,
             150, 40,
-            self.bg_color, self.light_shadow, self.dark_shadow,
+            self.warning_color, self.light_shadow, self.dark_shadow,
             (232, 77, 77),  # Vermelho para botão de voltar
             "VOLTAR", self.text_font
         )
@@ -330,7 +309,7 @@ class GameHistoryScreen:
     
     def draw(self):
         # Limpa a tela com a cor de fundo
-        self.screen.fill(self.bg_color)
+        self.screen.fill(self.warning_color)
         
         # Desenha o painel principal
         self.main_panel.draw(self.screen)
@@ -348,7 +327,7 @@ class GameHistoryScreen:
         line_height = 30
         
         stats_text = [
-            f"Dinheiro Total: R$ {self.student_stats['money_total']:,}",
+            f"Policoins Total: {self.student_stats['money_total']:,}",
             f"Jogos Realizados: {self.student_stats['games_played']}",
         ]
         
@@ -371,7 +350,7 @@ class GameHistoryScreen:
         subject_rect = subject_header.get_rect(midtop=(self.history_panel.rect.centerx, header_y))
         self.screen.blit(subject_header, subject_rect)
         
-        score_header = self.small_font.render("Pontuação", True, (100, 100, 100))
+        score_header = self.small_font.render("Policoins", True, (100, 100, 100))
         score_rect = score_header.get_rect(topright=(self.history_panel.rect.right - 20, header_y))
         self.screen.blit(score_header, score_rect)
         
@@ -431,6 +410,4 @@ class GameHistoryScreen:
             self.update()
             self.draw()
             pygame.time.Clock().tick(60)
-        
-        # Retorno no caso de sair do loop por outros meios
         return {"action": "exit"}
