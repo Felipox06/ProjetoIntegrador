@@ -324,7 +324,7 @@ class QuestionRemoveScreen:
         self.subject_buttons = []
         btn_width = 90
         btn_height = 30
-        btn_x_start = center_x - 300
+        btn_x_start = center_x - 350
         btn_y = 85
         
         for i, subject in enumerate(SUBJECTS[:7]):  # Limitamos a 7 matérias para caber
@@ -341,8 +341,8 @@ class QuestionRemoveScreen:
         # Botões para séries (filtro)
         self.grade_buttons = []
         btn_width = 80
-        btn_x_start = center_x - 150
-        btn_y = 125
+        btn_x_start = center_x - 250
+        btn_y = 120
         
         for i, grade in enumerate(GRADE_LEVELS):
             btn_x = btn_x_start + i * (btn_width + 10)
@@ -357,7 +357,7 @@ class QuestionRemoveScreen:
         
         # Botões para dificuldade (filtro)
         self.difficulty_buttons = []
-        btn_x_start = center_x + 40
+        btn_x_start = center_x + 20
         
         for i, difficulty in enumerate(DIFFICULTY_LEVELS):
             btn_x = btn_x_start + i * (btn_width + 10)
@@ -372,7 +372,7 @@ class QuestionRemoveScreen:
         
         # Botão para aplicar filtros
         self.apply_filter_button = NeumorphicButton(
-            center_x + 200, 105,
+            center_x + 300, 120,
             100, 30,
             self.bg_color, self.light_shadow, self.dark_shadow,
             COLORS.get("success", (75, 181, 67)),
@@ -381,7 +381,7 @@ class QuestionRemoveScreen:
         
         # Botão para limpar filtros
         self.clear_filter_button = NeumorphicButton(
-            center_x + 200, 145,
+            center_x + 300, 155,
             100, 30,
             self.bg_color, self.light_shadow, self.dark_shadow,
             COLORS.get("warning", (232, 181, 12)),

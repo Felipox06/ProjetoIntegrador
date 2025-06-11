@@ -142,7 +142,7 @@ class UserManagementScreen:
         )
         
         self.back_button = NeumorphicButton(
-            self.center_x - 150, 490,
+            self.center_x - 150, 520,
             300, 50,
             self.bg_color, self.light_shadow, self.dark_shadow,
             (180, 180, 180),

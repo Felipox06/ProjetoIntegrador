@@ -185,7 +185,7 @@ class GameConfigScreen:
         button_height = 50
         margin_x = 20
         margin_y = 15
-        start_x = center_x - (button_width * 2 + margin_x/2)
+        start_x = center_x - (button_width * 2 + margin_x/2 + 10)
         start_y = 160  
        
         for i, subject in enumerate(SUBJECTS):
@@ -214,7 +214,7 @@ class GameConfigScreen:
         button_height = 50
         margin_x = 20
         start_x = center_x - (button_width * 1.5 + margin_x)
-        start_y = 310  
+        start_y = 315
        
         for i, grade in enumerate(GRADE_LEVELS):
             x = start_x + i * (button_width + margin_x)
@@ -238,8 +238,8 @@ class GameConfigScreen:
         button_height = 50
         margin_x = 15
         total_width = button_width * 4 + margin_x * 3
-        start_x = center_x - total_width // 2 + 20
-        start_y = 410  
+        start_x = center_x - total_width // 2 + 70
+        start_y = 400 
        
         # Cores diferentes para cada nível de dificuldade
         difficulty_colors = {
